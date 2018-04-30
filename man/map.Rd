@@ -1,19 +1,19 @@
-\name{f2data}
-\alias{f2data}
+\name{map}
+\alias{map}
 \alias{marker}
 \alias{chr}
 \alias{pos}
 \title{
- F2 example data 
+ map example data 
 }
 \description{
-GCIM format of F2 dataset.
+GCIM format of DH map dataset.
 }
 \usage{
-  data(f2data)
+  data(map)
 }
 \details{
-Dataset input of file for QTL.gCIMapping function. 
+Dataset input of file for WangF function. 
 }
 \author{
  Maintainer: Yuanming Zhang<soyzhang@mail.hzau.edu.cn>

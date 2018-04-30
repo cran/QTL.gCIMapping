@@ -22,4 +22,11 @@ WangF(pheRaw,genRaw,mapRaw1,yygg1,cov_en,Population,WalkSpeed,CriLOD,dir)
 Zhang Ya-Wen, Wen Yang-Jun, Wang Shi-Bo, Zhang Yuan-Ming\cr
 Maintainer: Yuanming Zhang<soyzhang@mail.hzau.edu.cn>
 }
+\examples{
+G1=data(gen)
+P1=data(phe)
+M1=data(map)
+WangF(phe,gen,map,yygg1=NULL,cov_en=NULL,Population="DH",1,2.5,dir=tempdir())
+}
+
 

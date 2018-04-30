@@ -227,7 +227,7 @@ fix<-function(x,gen,y,kk){
   cll <- makeCluster(cl.cores)
   registerDoParallel(cll)
   
-  i<-numeric()
+ i<-numeric()
   parmm<-foreach(i=1:nrow(gen),.combine=rbind)%dopar%{
     x<-tempx
     z<-gen[i,3:(ncol(gen))]
@@ -400,7 +400,7 @@ random<-function(fx,gen,phe,kk)
   }
   cll <- makeCluster(cl.cores)
   registerDoParallel(cll)
-  
+
   k<-numeric()
   parms<-foreach(k=1:m,.combine=rbind)%dopar%{
     z<-as.matrix(gen[,k])
