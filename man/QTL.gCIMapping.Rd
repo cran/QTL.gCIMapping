@@ -9,8 +9,8 @@ Conduct multiple quantitative trait loci (QTL) mapping under the framework of ra
 \tabular{ll}{
 Package: \tab QTL.gCIMapping\cr
 Type: \tab Package\cr
-Version: \tab 3.0\cr
-Date: \tab 2018-6-13\cr
+Version: \tab 3.1\cr
+Date: \tab 2018-10-16\cr
 Depends: \tab MASS,dplyr,parcor,qtl,doParallel\cr
 Imports: \tab methods,openxlsx,stringr,Rcpp\cr
 License: \tab GPL version 2 or newer\cr
@@ -55,5 +55,5 @@ package
 G=data(f2data)
 QTL.gCIMapping(file=f2data,fileFormat="GCIM",fileICIMcov=NULL,Population="F2",
 Model="Random",WalkSpeed=1,CriLOD=2.5,Likelihood="REML",flagrqtl="FALSE",
-DrawPlot="FALSE",PlotFormat="png",Resolution="Low",Trait=1:1,dir=tempdir()) 
+DrawPlot="FALSE",PlotFormat="png",Resolution="Low",Trait=1,dir=tempdir()) 
 }
