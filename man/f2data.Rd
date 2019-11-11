@@ -1,8 +1,8 @@
-\name{f2data}
-\alias{f2data}
-\alias{marker}
-\alias{chr}
-\alias{pos}
+\name{F2data}
+\alias{F2data}
+\alias{F001}
+\alias{F002}
+\alias{F003}
 \title{
  F2 example data 
 }
@@ -10,10 +10,10 @@
 GCIM format of F2 dataset.
 }
 \usage{
-  data(f2data)
+  data(F2data)
 }
 \details{
-Dataset input of file for QTL.gCIMapping function. 
+Input file for WenF function. 
 }
 \author{
  Maintainer: Yuanming Zhang<soyzhang@mail.hzau.edu.cn>

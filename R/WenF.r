@@ -1,5 +1,5 @@
 WenF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,cov_en=NULL,
-              WalkSpeed=NULL,CriLOD=NULL,dir=NULL){
+               WalkSpeed=NULL,CriLOD=NULL,dir=NULL){
   
   cl<-WalkSpeed;sLOD<-CriLOD;yygg<-NULL
   mx=NULL;phe=NULL;chr_name=NULL;v.map=NULL
@@ -172,7 +172,7 @@ WenF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,cov_en=NULL,
     }
   }
   if(length(delerow)!=0){
-    warning("Please correct the map file to make sure whether all the marker positions are different!")
+    warning("Please check linkage maps (linkage groups) to make sure whether all the marker positions are different!")
   }else{
     
     phe1<-as.matrix(phe[,1])
@@ -261,9 +261,9 @@ WenF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,cov_en=NULL,
     X.ad.t4<-t(ad)
     
   }
-   output<-list(yygg=yygg,mx=mx,phe=phe,chr_name=chr_name,v.map=v.map,gen.raw=gen.raw,a.gen.orig=a.gen.orig,d.gen.orig=d.gen.orig,n=n,
-                names.insert2=names.insert2,X.ad.tran.data=X.ad.tran.data,X.ad.t4=X.ad.t4)
-   return(output)
+  output<-list(yygg=yygg,mx=mx,phe=phe,chr_name=chr_name,v.map=v.map,gen.raw=gen.raw,a.gen.orig=a.gen.orig,d.gen.orig=d.gen.orig,n=n,
+               names.insert2=names.insert2,X.ad.tran.data=X.ad.tran.data,X.ad.t4=X.ad.t4)
+  return(output)
 }
 
 
@@ -275,6 +275,20 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
   
   sLOD<-CriLOD;result=NULL;mxmp=NULL;galaxyy1=NULL;res1a=NULL;res1d=NULL
   
+  
+  #########
+  #-1,0,1 change a and d matrix
+  change<-function(x){
+    m<-length(x)
+    y<-vector(length=2*m)
+    for(j in 1:m){
+      if(x[j]==1){y[(j-1)*2+1]<-1}
+      if(x[j]==-1){y[(j-1)*2+1]<--1}
+      if(x[j]==0){y[(j-1)*2+2]<-1}
+    }
+    return(y)
+  }
+  #####k kinship start################
   kinship.F2 <- function(gen){
     X1<-as.matrix(gen)
     kk<-X1%*%t(X1)
@@ -282,6 +296,21 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
     kk<-kk/cc
     return(kk)
   }
+  ###################################################
+  #K kinship end
+  #############################################
+  ###mixed.vars start
+  #Mixednew can fit the models involving mutiple variace matrixs. 
+  
+  #input
+  ##dataframe<-cbind(y,w)
+  #y:n*1
+  #w:n*c,include intercept,fixed effect
+  #kinship<-list(K.a,K.d,...)
+  #K.a,K.d,...,:n*n,matrix
+  
+  #output
+  #RR$tau.kk:sigma.a2,sigma.d2,...,sigma.e2
   
   mixed.vars<-function(dataframe,kinship,optim.speed=TRUE){
     #data
@@ -293,13 +322,13 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
     r<-ncol(x)
     num.kk<-length(kk)
     
-    cal.xx<-function(x,y,H=NA){
+    cal.xx<-function(x,y,H=NULL){
       x<-as.matrix(x)
       y<-as.matrix(y)
       nr<-ncol(x)
       nc<-ncol(y)
       n0<-nrow(x)
-      if (is.na(H)) H<-diag(n0)
+      if (is.null(H)) H<-diag(n0)
       xx<-t(x)%*%H%*%y
       xx<-as.matrix(xx)
       return(xx)
@@ -771,359 +800,149 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
   
   
   ################################################
-  #likelihood: 
-  emma.eigen.L.c <- function(Z,K,complete=TRUE) {
-    if ( is.null(Z) ) {
-      return(emma.eigen.L.wo.Z.c(K))
-    }
-    else {
-      return(emma.eigen.L.w.Z.c(Z,K,complete))
-    }
-  }
-  #likelihood
-  emma.eigen.L.wo.Z.c <- function(K) {
-    eig <- eigen(K,symmetric=TRUE)
-    return(list(values=eig$values,vectors=eig$vectors))
-  }
-  
-  #likelihood
-  emma.eigen.L.w.Z.c <- function(Z,K,complete=TRUE) {
-    if ( complete == FALSE ) {
-      vids <- colSums(Z)>0
-      Z <- Z[,vids]
-      K <- K[vids,vids]
-    }
-    eig <- eigen(K%*%crossprod(Z,Z),symmetric=TRUE,EISPACK=TRUE)
-    return(list(values=eig$values,vectors=qr.Q(qr(Z%*%eig$vectors),complete=TRUE)))
-  }
-  
-  #restricted likelihood
-  emma.eigen.R.c <- function(Z,K,X,complete=TRUE) {
-    if ( ncol(X) == 0 ) {
-      return(emma.eigen.L.c(Z,K))
-    }
-    else if ( is.null(Z) ) {
-      return(emma.eigen.R.wo.Z.c(K,X))
-    }
-    else {
-      return(emma.eigen.R.w.Z.c(Z,K,X,complete))
-    }
-  }
-  #restricted likelihood
-  emma.eigen.R.wo.Z.c <- function(K, X) {
-    
-    if(is.matrix(X)) {    
-      n<-nrow(X)   
-      q<-ncol(X) 
-    } 
-    else{   
-      n<-length(X) 
-      q<-1 
-    }
-    S <- diag(n)-X%*%solve(crossprod(X,X))%*%t(X)
-    eig <- eigen(S%*%(K+diag(1,n))%*%S,symmetric=TRUE)
-    stopifnot(!is.complex(eig$values))
-    return(list(values=eig$values[1:(n-q)]-1,vectors=eig$vectors[,1:(n-q)]))
-  }
-  
-  #restricted likelihood
-  emma.eigen.R.w.Z.c <- function(Z, K, X, complete = TRUE) {
-    if ( complete == FALSE ) {
-      vids <-  colSums(Z) > 0
-      Z <- Z[,vids]
-      K <- K[vids,vids]
-    }
-    if(!is.matrix(Z)) n<-length(Z) 
-    t <-1 
-    if(is.matrix(X)) {
-      q<-ncol(X)
-    }    
-    else  {
-      q<-1
-    }
-    
-    SZ <- Z - X%*%solve(crossprod(X,X))%*%crossprod(X,Z)
-    eig <- eigen(K%*%crossprod(Z,SZ),symmetric=FALSE,EISPACK=TRUE)
-    if ( is.complex(eig$values) ) {
-      eig$values <- Re(eig$values)
-      eig$vectors <- Re(eig$vectors)    
-    }
-    qr.X <- qr.Q(qr(X))
-    return(list(values=eig$values[1],
-                vectors=qr.Q(qr(cbind(SZ%*%eig$vectors[,1:t],qr.X)),
-                             complete=TRUE)[,c(1:t,(t+q+1):n)]))  
-    
-  }
-  ######################################################################################
-  emma.delta.REML.LL.w.Z.c <- function(logdelta, lambda, etas.1, n, q, etas.2.sq ) {
-    nq<-n-q 
+  #likelihood 20190902
+  FASTmrEMMA.delta.ML.LL.c<-function(logdelta,X,M,M.y,yMy,n){
+    #X=X_c:n*1,M=M_c:n*n,M.y=M_c%*%y_c:n*1,yMy=t(y_c)%*%M_c%*%y_c:1*1
+    #n<-dim(M)[1]
     delta <-  exp(logdelta)
-    return( 0.5*(nq*(log(nq/(2*pi))-1-log(sum(etas.1*etas.1/(delta*lambda+1))+etas.2.sq))-sum(log(delta*lambda+1))) ) 
+    ci<-as.numeric(crossprod(X))
+    delta1<-as.numeric(t(X)%*%M%*%X)
+    xMy<-as.numeric(crossprod(X,M.y))
+    return(0.5*(n*((log(n/(2*pi))-log(as.numeric(yMy)-delta*(xMy)^2/(1+delta*delta1)))-1)-log(delta*ci+1)))
+  }
+  #dML
+  
+  FASTmrEMMA.delta.ML.dLL.c<-function(logdelta,X,M,M.y,yMy,n){
+    #X=X_c:n*1,M=M_c:n*n,M.y=M_c%*%y_c:n*1,yMy=t(y_c)%*%M_c%*%y_c:1*1
+    #n<-dim(M)[1]
+    delta <-  exp(logdelta)
+    ci<-as.numeric(crossprod(X))
+    delta1<-as.numeric(t(X)%*%M%*%X)
+    xMy<-as.numeric(crossprod(X,M.y))
+    return(-0.5*ci/(1+delta*ci)+0.5*n/((1+delta*delta1)*(as.numeric(yMy)*(1+delta*delta1)/(xMy^2)-delta)))
+  }
+  #restrict likelihood 20190902
+  FASTmrEMMA.delta.REML.LL.c<-function(logdelta,X,M,M.y,yMy,v){
+    #X=X_c:n*1,M=M_c:n*n,M.y=M_c%*%y_c:n*1,yMy=t(y_c)%*%M_c%*%y_c:1*1
+    #v<-n-1
+    delta <-  exp(logdelta)
+    #ci<-crossprod(X)
+    delta1<-as.numeric(t(X)%*%M%*%X)
+    xMy<-as.numeric(crossprod(X,M.y))
+    return(0.5*(v*((log(v/(2*pi))-log(as.numeric(yMy)-delta*(xMy)^2/(1+delta*delta1)))-1)-log(delta*delta1+1)))
+  }
+  #dREML
+  FASTmrEMMA.delta.REML.dLL.c<-function(logdelta,X,M,M.y,yMy,v){
+    #X=X_c:n*1,M=M_c:n*n,M.y=M_c%*%y_c:n*1,yMy=t(y_c)%*%M_c%*%y_c:1*1
+    #n<-dim(M)[1]
+    delta <-  exp(logdelta)
+    #ci<-crossprod(X)
+    delta1<-as.numeric(t(X)%*%M%*%X)
+    xMy<-as.numeric(crossprod(X,M.y))
+    return(-0.5*delta1/(1+delta*delta1)+0.5*v/((1+delta*delta1)*(as.numeric(yMy)*(1+delta*delta1)/(xMy^2)-delta)))
   }
   
-  emma.delta.REML.dLL.w.Z.c <- function(logdelta, lambda, etas.1, n, q1, etas.2.sq ) {
-    q<-q1
-    nq<-n-q
-    delta <- exp(logdelta)
-    etasq <- etas.1*etas.1
-    ldelta <- delta*lambda+1
-    return( 0.5*(nq*sum(etasq*lambda/(ldelta*ldelta))/(sum(etasq/ldelta)+etas.2.sq)-sum(lambda/ldelta) ))
-  }
-  ###########################
-  
-  emma.MLE.c <- function(y, X, K=1, Z=NULL, ngrids=100, llim=-10, ulim=10,
-                         esp=1e-10, eig.L = NULL, eig.R = NULL)#Z=X_c,K=1,X=W_c
-  {
-    if(is.matrix(y)){
-      n<-nrow(y)
+  ######################################################################################
+  #20190906
+  FASTmrEMMA.MLE.c<-function(X,M,M.y,yMy,n, ngrids=100, llim=-10, ulim=10, esp=1e-10){
+    
+    logdelta <- (0:ngrids)/ngrids*(ulim-llim)+llim
+    
+    m <- length(logdelta)
+    #delta <- exp(logdelta)
+    
+    dLL<-FASTmrEMMA.delta.ML.dLL.c(logdelta,X,M,M.y,yMy,n)
+    
+    optlogdelta <- vector(length=0)
+    optLL <- vector(length=0)
+    
+    if ( dLL[1] < esp ) {
+      optlogdelta <- append(optlogdelta, llim)
+      optLL <- append(optLL,FASTmrEMMA.delta.ML.LL.c(llim,X,M,M.y,yMy,n))
     }
-    else{
-      n <- length(y)
+    if ( dLL[m-1] > 0-esp ) {
+      optlogdelta <- append(optlogdelta, ulim)
+      #optLL <- append(optLL, emma.delta.ML.LL.w.Z(ulim,eig.R$values,etas.1,eig.L$values,n,etas.2.sq))
+      optLL <- append(optLL, FASTmrEMMA.delta.ML.LL.c(ulim,X,M,M.y,yMy,n))
+      
     }
     
-    t <- 1#,K=1,t=1
-    if ( is.matrix(X) ){
-      q <- ncol(X)
-      stopifnot(nrow(X)==n)
-    }
-    else{#X:n*1 vector
-      q <- 1
-      stopifnot(length(X)==n)
-    }
-    
-    stopifnot(K == 1)
-    
-    if ( det(crossprod(X,X)) == 0 ) {
-      warning("X is singular")
-      return (list(ML=0,delta=0,ve=0,vg=0))
-    }
-    
-    if ( is.null(Z) ) {
-      if ( is.null(eig.L) ) {
-        eig.L <- emma.eigen.L.wo.Z.c(K)
-      }
-      if ( is.null(eig.R) ) {
-        eig.R <- emma.eigen.R.wo.Z.c(K,X)
-      }
-      etas <- crossprod(eig.R$vectors,y)
-      
-      
-      logdelta <- (0:ngrids)/ngrids*(ulim-llim)+llim
-      m <- length(logdelta)
-      delta <- exp(logdelta)
-      
-      Lambdas.1<-matrix(eig.R$values,n-q,m)    
-      Lambdas <- Lambdas.1 * matrix(delta,n-q,m,byrow=TRUE)+1
-      Xis.1<-matrix(eig.L$values,n,m)
-      Xis <- Xis.1* matrix(delta,n,m,byrow=TRUE)+1
-      Etasq <- matrix(etas*etas,n-q,m)
-      dLL <- 0.5*delta*(n*colSums(Etasq*Lambdas.1/(Lambdas*Lambdas))/colSums(Etasq/Lambdas)-colSums(Xis.1/Xis))
-      optlogdelta <- vector(length=0)
-      optLL <- vector(length=0)
-      if ( dLL[1] < esp ) {
-        optlogdelta <- append(optlogdelta, llim)
-        optLL <- append(optLL, emma.delta.ML.LL.wo.Z(llim,eig.R$values,etas,eig.L$values))
-      }
-      if ( dLL[m-1] > 0-esp ) {
-        optlogdelta <- append(optlogdelta, ulim)
-        optLL <- append(optLL, emma.delta.ML.LL.wo.Z(ulim,eig.R$values,etas,eig.L$values))
-      }
-      
-      for( i in 1:(m-1) )
+    for( i in 1:(m-1) )
+    {
+      if ( ( dLL[i]*dLL[i+1] < 0-esp*esp ) && ( dLL[i] > 0 ) && ( dLL[i+1] < 0 ) ) 
       {
-        if ( ( dLL[i]*dLL[i+1] < 0-esp*esp ) && ( dLL[i] > 0 ) && ( dLL[i+1] < 0 ) ) 
-        {
-          r <- uniroot(emma.delta.ML.dLL.wo.Z, lower=logdelta[i], upper=logdelta[i+1], lambda=eig.R$values, etas=etas, xi=eig.L$values)
-          optlogdelta <- append(optlogdelta, r$root)
-          optLL <- append(optLL, emma.delta.ML.LL.wo.Z(r$root,eig.R$values, etas, eig.L$values))
-        }
+        #r <- uniroot(emma.delta.ML.dLL.w.Z, lower=logdelta[i], upper=logdelta[i+1], lambda=eig.R$values, etas.1=etas.1, xi.1=eig.L$values, n=n, etas.2.sq = etas.2.sq )
+        #r <- uniroot(FASTmrEMMA.delta.ML.dLL.c,lower = logdelta[i],upper = logdelta[i+1],X,M,M.y,yMy,n)
+        r <- uniroot(FASTmrEMMA.delta.ML.dLL.c,c(logdelta[i],logdelta[i+1]),X=X,M=M,M.y=M.y,yMy=yMy,n=n)
+        
+        optlogdelta <- append(optlogdelta, r$root)
+        #optLL <- append(optLL, emma.delta.ML.LL.w.Z(r$root,eig.R$values, etas.1, eig.L$values, n, etas.2.sq ))
+        optLL <- append(optLL,FASTmrEMMA.delta.ML.LL.c(r$root,X,M,M.y,yMy,n))
       }
-      #    optdelta <- exp(optlogdelta)
     }
-    else {
-      if ( is.null(eig.L) ) {
-        eig.L <- emma.eigen.L.w.Z.c(Z,K)
-      }
-      if ( is.null(eig.R) ) {
-        eig.R <- emma.eigen.R.w.Z.c(Z,K,X)
-      }
-      etas <- crossprod(eig.R$vectors,y)
-      etas.1<-etas[1:t]
-      etas.2<-etas[(t+1):(n-q)]
-      etas.2.sq <- sum(etas.2*etas.2)
-      
-      logdelta <- (0:ngrids)/ngrids*(ulim-llim)+llim
-      
-      m <- length(logdelta)
-      delta <- exp(logdelta)
-      
-      Lambdas.1<-matrix(eig.R$values,t,m)
-      Lambdas <- Lambdas.1 * matrix(delta,t,m,byrow=TRUE) + 1
-      
-      Xis.1<-matrix(eig.L$values,t,m)
-      Xis <- Xis.1 * matrix(delta,t,m,byrow=TRUE) + 1
-      Etasq <- matrix(etas.1*etas.1,t,m)
-      dLL <- 0.5*delta*(n*colSums(Etasq*Lambdas.1/(Lambdas*Lambdas))/(colSums(Etasq/Lambdas)+etas.2.sq)-colSums(Xis.1/Xis))
-      optlogdelta <- vector(length=0)
-      optLL <- vector(length=0)
-      if ( dLL[1] < esp ) {
-        optlogdelta <- append(optlogdelta, llim)
-        optLL <- append(optLL, emma.delta.ML.LL.w.Z(llim,eig.R$values,etas.1,eig.L$values,n,etas.2.sq))
-      }
-      if ( dLL[m-1] > 0-esp ) {
-        optlogdelta <- append(optlogdelta, ulim)
-        optLL <- append(optLL, emma.delta.ML.LL.w.Z(ulim,eig.R$values,etas.1,eig.L$values,n,etas.2.sq))
-      }
-      
-      for( i in 1:(m-1) )
-      {
-        if ( ( dLL[i]*dLL[i+1] < 0-esp*esp ) && ( dLL[i] > 0 ) && ( dLL[i+1] < 0 ) ) 
-        {
-          r <- uniroot(emma.delta.ML.dLL.w.Z, lower=logdelta[i], upper=logdelta[i+1], lambda=eig.R$values, etas.1=etas.1, xi.1=eig.L$values, n=n, etas.2.sq = etas.2.sq )
-          optlogdelta <- append(optlogdelta, r$root)
-          optLL <- append(optLL, emma.delta.ML.LL.w.Z(r$root,eig.R$values, etas.1, eig.L$values, n, etas.2.sq ))
-        }
-      }
-      #    optdelta <- exp(optlogdelta)
-    }
-    
-    #handler of grids with NaN log
-    optLL=replaceNaN(optLL)  #20160728
-    
     maxdelta <- exp(optlogdelta[which.max(optLL)])
-    
-    maxLL <- max(optLL)
-    if ( is.null(Z) ) {
-      maxve <- sum(etas*etas/(maxdelta*eig.R$values+1))/n    
-    }
-    else {
-      maxve <- (sum(etas.1*etas.1/(maxdelta*eig.R$values+1))+etas.2.sq)/n
-    }
-    maxvg <- maxve*maxdelta
-    
-    return (list(ML=maxLL,delta=maxdelta,ve=maxve,vg=maxvg,U_R=eig.R$vectors,etas.1=etas.1,etas=etas,lambda=eig.R$values))
-  }
-  
-  
-  emma.REMLE.c <- function(y, X, K=1, Z=NULL, ngrids=100, llim=-10, ulim=10,
-                           esp=1e-10, eig.L = NULL, eig.R = NULL) #K=1,X=W_c,Z=X_c
-  {
-    if(is.matrix(y)){
-      n<-nrow(y)
-    }
-    else{
-      n <- length(y)
-    }
-    
-    t <- 1#,K=1,t=1
-    if ( is.matrix(X) ){
-      q <- ncol(X)
-    }
-    else{#X:n*1 vector
-      q <- 1
-    }
-    stopifnot(K == 1)
-    stopifnot(nrow(X) == n)
-    
-    if ( det(crossprod(X,X)) == 0 ) {
-      warning("X is singular")
-      return (list(REML=0,delta=0,ve=0,vg=0))
-    }
-    
-    if ( is.null(Z) ) {
-      if ( is.null(eig.R) ) {
-        eig.R <- emma.eigen.R.wo.Z.c(K,X)
-      }
-      etas <- crossprod(eig.R$vectors,y)
-      
-      logdelta <- (0:ngrids)/ngrids*(ulim-llim)+llim
-      m <- length(logdelta)
-      delta <- exp(logdelta)
-      
-      Lambdas.1<-matrix(eig.R$values,n-q,m)
-      Lambdas <- Lambdas.1 * matrix(delta,n-q,m,byrow=TRUE) + 1
-      Etasq <- matrix(etas*etas,n-q,m)
-      
-      dLL <- 0.5*delta*((n-q)*colSums(Etasq*Lambdas.1/(Lambdas*Lambdas))/colSums(Etasq/Lambdas)-colSums(Lambdas.1/Lambdas))
-      optlogdelta <- vector(length=0)
-      optLL <- vector(length=0)
-      if ( dLL[1] < esp ) {
-        optlogdelta <- append(optlogdelta, llim)
-        optLL <- append(optLL, emma.delta.REML.LL.wo.Z(llim,eig.R$values,etas))
-      }
-      if ( dLL[m-1] > 0-esp ) {
-        optlogdelta <- append(optlogdelta, ulim)
-        optLL <- append(optLL, emma.delta.REML.LL.wo.Z(ulim,eig.R$values,etas))
-      }
-      
-      for( i in 1:(m-1) )
-      {
-        if ( ( dLL[i]*dLL[i+1] < 0-esp*esp ) && ( dLL[i] > 0 ) && ( dLL[i+1] < 0 ) ) 
-        {
-          r <- uniroot(emma.delta.REML.dLL.wo.Z, lower=logdelta[i], upper=logdelta[i+1], lambda=eig.R$values, etas=etas)
-          optlogdelta <- append(optlogdelta, r$root)
-          optLL <- append(optLL, emma.delta.REML.LL.wo.Z(r$root,eig.R$values, etas))
-        }
-      }
-      #    optdelta <- exp(optlogdelta)
-    }
-    else {
-      if ( is.null(eig.R) ) {
-        eig.R <- emma.eigen.R.w.Z.c(Z,K,X)
-      }
-      etas <- crossprod(eig.R$vectors,y)
-      
-      etas.1 <- etas[1:t]
-      etas.2 <- etas[(t+1):(n-q)]
-      etas.2.sq <- sum(etas.2*etas.2)
-      
-      logdelta <- (0:ngrids)/ngrids*(ulim-llim)+llim
-      m <- length(logdelta)
-      delta <- exp(logdelta)
-      
-      Lambdas.1 <- matrix(eig.R$values,t,m) 
-      Lambdas <- Lambdas.1 * matrix(delta,t,m,byrow=TRUE) + 1
-      Etasq <- matrix(etas.1*etas.1,t,m)
-      
-      dLL <- 0.5*delta*((n-q)*colSums(Etasq*Lambdas.1/(Lambdas*Lambdas))/(colSums(Etasq/Lambdas)+etas.2.sq)-colSums(Lambdas.1/Lambdas))
-      optlogdelta <- vector(length=0)
-      optLL <- vector(length=0)
-      if ( dLL[1] < esp ) {
-        optlogdelta <- append(optlogdelta, llim)
-        optLL <- append(optLL, emma.delta.REML.LL.w.Z.c(llim,eig.R$values,etas.1,n,q,etas.2.sq))
-      }
-      if ( dLL[m-1] > 0-esp ) {
-        optlogdelta <- append(optlogdelta, ulim)
-        optLL <- append(optLL, emma.delta.REML.LL.w.Z.c(ulim,eig.R$values,etas.1,n,q,etas.2.sq))
-      }
-      
-      for( i in 1:(m-1) )
-      {
-        if ( ( dLL[i]*dLL[i+1] < 0-esp*esp ) && ( dLL[i] > 0 ) && ( dLL[i+1] < 0 ) ) 
-        {
-          r <- uniroot(emma.delta.REML.dLL.w.Z.c, lower=logdelta[i], upper=logdelta[i+1], lambda=eig.R$values, etas.1=etas.1, n=n, q1=q, etas.2.sq = etas.2.sq )#t1=t change to q1=q#have revised 20140830
-          optlogdelta <- append(optlogdelta, r$root)
-          optLL <- append(optLL, emma.delta.REML.LL.w.Z.c(r$root,eig.R$values, etas.1, n, q, etas.2.sq ))
-        }
-      }
-      #    optdelta <- exp(optlogdelta)
-    }  
-    
-    #handler of grids with NaN log
-    optLL=replaceNaN(optLL)  #20160728
-    
-    maxdelta <- exp(optlogdelta[which.max(optLL)])
-    
+    optLL=replaceNaN(optLL)
     maxLL <- max(optLL)
     
-    if ( is.null(Z) ) {
-      maxve <- sum(etas*etas/(maxdelta*eig.R$values+1))/(n-q)    
-    }
-    else {
-      maxve <- (sum(etas.1*etas.1/(maxdelta*eig.R$values+1))+etas.2.sq)/(n-q)
-    }
+    xMy<-crossprod(X,M.y)
+    xMx<-crossprod(X,(M%*%X))
+    maxve <-(yMy-maxdelta*(xMy)^2/(1+maxdelta*xMx))/n
+    #(sum(etas.1*etas.1/(maxdelta*eig.R$values+1))+etas.2.sq)/n
+    
     maxvg <- maxve*maxdelta
-    return (list(REML=maxLL,delta=maxdelta,ve=maxve,vg=maxvg,U_R=eig.R$vectors,etas.1=etas.1,etas=etas,lambda=eig.R$values))
+    #alpha<-inv()
+    
+    return (list(ML=maxLL,delta=maxdelta,ve=maxve,vg=maxvg,delta1=xMx,xMy=xMy))
+  }
+  
+  FASTmrEMMA.REMLE.c<-function(X,M,M.y,yMy,v, ngrids=100, llim=-10, ulim=10, esp=1e-10){
+    
+    logdelta <- (0:ngrids)/ngrids*(ulim-llim)+llim
+    
+    m <- length(logdelta)
+    #delta <- exp(logdelta)
+    
+    dLL<-FASTmrEMMA.delta.REML.dLL.c(logdelta,X,M,M.y,yMy,v)
+    
+    optlogdelta <- vector(length=0)
+    optLL <- vector(length=0)
+    
+    if ( dLL[1] < esp ) {
+      optlogdelta <- append(optlogdelta, llim)
+      optLL <- append(optLL,FASTmrEMMA.delta.REML.LL.c(llim,X,M,M.y,yMy,v))
+    }
+    if ( dLL[m-1] > 0-esp ) {
+      optlogdelta <- append(optlogdelta, ulim)
+      #optLL <- append(optLL, emma.delta.ML.LL.w.Z(ulim,eig.R$values,etas.1,eig.L$values,n,etas.2.sq))
+      optLL <- append(optLL, FASTmrEMMA.delta.REML.LL.c(ulim,X,M,M.y,yMy,v))
+      
+    }
+    
+    for( i in 1:(m-1) )
+    {
+      if ( ( dLL[i]*dLL[i+1] < 0-esp*esp ) && ( dLL[i] > 0 ) && ( dLL[i+1] < 0 ) ) 
+      {
+        #r <- uniroot(emma.delta.ML.dLL.w.Z, lower=logdelta[i], upper=logdelta[i+1], lambda=eig.R$values, etas.1=etas.1, xi.1=eig.L$values, n=n, etas.2.sq = etas.2.sq )
+        r <- uniroot(FASTmrEMMA.delta.REML.dLL.c,lower = logdelta[i],upper = logdelta[i+1],X=X,M=M,M.y=M.y,yMy=yMy,v=v)
+        
+        optlogdelta <- append(optlogdelta, r$root)
+        #optLL <- append(optLL, emma.delta.ML.LL.w.Z(r$root,eig.R$values, etas.1, eig.L$values, n, etas.2.sq ))
+        optLL <- append(optLL,FASTmrEMMA.delta.REML.LL.c(r$root,X,M,M.y,yMy,v))
+      }
+    }
+    maxdelta <- exp(optlogdelta[which.max(optLL)])
+    optLL=replaceNaN(optLL)
+    maxLL <- max(optLL)
+    
+    xMy<-crossprod(X,M.y)
+    xMx<-crossprod(X,(M%*%X))
+    maxve <-(yMy-maxdelta*(xMy)^2/(1+maxdelta*xMx))/v
+    #(sum(etas.1*etas.1/(maxdelta*eig.R$values+1))+etas.2.sq)/n
+    
+    maxvg <- maxve*maxdelta
+    #alpha<-inv()
+    
+    return (list(REML=maxLL,delta=maxdelta,ve=maxve,vg=maxvg,delta1=xMx,xMy=xMy))
   }
   
   ###################################################################
@@ -1235,23 +1054,99 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
     return(list(C.g=C,Q=Q,A=A,complete=TRUE))
   }
   
-  
-  
   ################################################################################################
   emma.MLE0.c <- function(Y_c,W_c){
     
     n <- length(Y_c)
+    
     stopifnot(nrow(W_c)==n)
     M_c<-diag(1,n)-W_c%*%solve(crossprod(W_c,W_c))%*%t(W_c)
     etas<-crossprod(M_c,Y_c)
     LL <- 0.5*n*(log(n/(2*pi))-1-log(sum(etas*etas)))
-    return(list(ML=LL))
+    return(list(ML=LL,M=M_c,n=n))
   }
   
-  emma.ML.LRT.c.noalpha <- function(ys, xs, K=1, Z, X0, ngrids=100, llim=-10, ulim=10, esp=1e-10) {
-    #K=1,Z=C:n*n,X0=W:n*c(or,1_n*1),ys:n*1
+  ######################################
+  FASTmrEMMA.ML.LRT.c <- function(ys, xs, Z, X0, ngrids=100, llim=-10, ulim=10, esp=1e-10) {
+    #20190910
+    #Z=C,X0=W=W0,xs=x:snp,n*p
+    ys <- Z%*%ys   
+    xs <- Z%*%xs
+    X0 <- Z%*%X0
     
-    stopifnot(K == 1)
+    ys<-as.matrix(ys)
+    xs<-as.matrix(xs)
+    X0<-as.matrix(X0)
+    
+    n <- nrow(ys)
+    t <- ncol(xs)
+    q<- if ( is.matrix(X0) ) ncol(X0) else 1
+    v<-n-q
+    
+    MLE0<-emma.MLE0.c(ys,X0)
+    
+    ML1s <- vector(length=t)
+    ML0s <- vector(length=t)
+    vgs <- vector(length=t)
+    ves <- vector(length=t)
+    lambdas<-vector(length=t)
+    bhats<-vector(length=t)
+    #   
+    d <- vector(length=t)
+    stats <- vector(length=t)
+    ps <- vector(length=t)
+    
+    #n<-199
+    #M<-diag(1,n)-X0%*%ginv(crossprod(X0))%*%t(X0)
+    M<-MLE0$M
+    M.y<-M%*%ys
+    yMy<-crossprod(ys,M.y)
+    
+    for (i in 1:t){
+      
+      # MLE1 <- emma.MLE.c (yv, x0v, K=1, xv, qr.X0,ngrids=100, llim=-10, ulim=10,esp=1e-10, eig.L = NULL, eig.R = NULL)
+      MLE1 <- FASTmrEMMA.MLE.c(X=xs[,i],M,M.y,yMy,n, ngrids=100, llim=-10, ulim=10, esp=1e-10)
+      
+      if(length(MLE1$vg)!=0){
+        ML1s[i]<-MLE1$ML
+        ML0s[i]<-MLE0$ML
+        vgs[i]<-MLE1$vg
+        ves[i]<-MLE1$ve
+        lambdas[i]<-MLE1$delta
+        
+        ###################
+        d[i] <- 1/(1+MLE1$delta*MLE1$delta1)
+        #bhats[i]<-MLE1$lambda*MLE1$xMy/(1+MLE1$lambda*MLE1$delta1)
+        bhats[i]<-MLE1$delta*MLE1$xMy/d[i]
+        #to record me=sum(d) 
+        
+        stats[i]<- 2*(MLE1$ML-MLE0$ML)
+        ps[i]<-if(stats[i]<=1e-100) 1 else pchisq(stats[i],1,lower.tail=F)/2#20160619
+      }else{
+        ps[i]<-1
+      }
+    }
+    
+    return(list(ID=1:t,ps=ps,bhats=bhats,lambdas=lambdas,d=d,ML1s=ML1s,ML0s=ML0s,stats=stats,vgs=vgs,ves=ves))
+    
+  } 
+  
+  emma.REMLE0.c <- function(Y_c,W_c){#20190831
+    
+    n <- length(Y_c)
+    stopifnot(nrow(W_c)==n)
+    
+    t <-qr(W_c)$rank
+    v <-n-t
+    
+    M_c<-diag(1,n)-W_c%*%solve(crossprod(W_c,W_c))%*%t(W_c)
+    etas<-crossprod(M_c,Y_c)
+    
+    LL <- 0.5*v*(log(v/(2*pi))-1-log(sum(etas*etas)))
+    return(list(REML=LL,M=M_c,v=v))
+    
+  }
+  FASTmrEMMA.REML.LRT.c<- function(ys, xs, Z, X0, ngrids=100, llim=-10, ulim=10, esp=1e-10) {
     
     
     ys <- Z%*%ys  
@@ -1261,93 +1156,11 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
     ys<-as.matrix(ys)
     xs<-as.matrix(xs)
     X0<-as.matrix(X0)
-    n <- nrow(ys)
-    m <- nrow(xs)
-    t <- ncol(xs)
-    q0 <- ncol(X0)
-    
-    MLE0<-emma.MLE0.c(ys,X0)
-    
-    ML1s <- vector(length=t)
-    ML0s <- vector(length=t)
-    vgs <- vector(length=t)
-    ves <- vector(length=t)
-    deltas<-vector(length=t)
-    bhats<-vector(length=t)
-    
-    var.bhats.ratio <- vector(length=t)
-    d <- vector(length=t)
-    stats <- vector(length=t)
-    ps <- vector(length=t)
-    
-    for (i in 1:t){
-      
-      vids <- !is.na(xs[,i])
-      xv <- xs[vids,i]
-      
-      yv <- ys[vids]
-      x0v<-X0[vids,]
-      
-      MLE1 <- emma.MLE.c (yv, x0v, K=1, xv, ngrids=100, llim=-10, ulim=10,esp=1e-10, eig.L = NULL, eig.R = NULL)
-      if(length(MLE1$vg)!=0){
-        ML1s[i]<-MLE1$ML
-        ML0s[i]<-MLE0$ML
-        vgs[i]<-MLE1$vg
-        ves[i]<-MLE1$ve
-        deltas[i]<-MLE1$delta
-        
-        
-        nv<-length(MLE1$etas)
-        Lam<-diag(c(1/(MLE1$delta*MLE1$lambda+1),rep(1,nv-1)))
-        Lam1 <- diag(c(1/(MLE1$delta*MLE1$lambda+1)^2,rep(1,nv-1)))
-        
-        temp <- crossprod(xv,MLE1$U_R)
-        bhats[i] <- MLE1$delta*temp%*%Lam%*%MLE1$etas
-        var.bhats.ratio[i] <- MLE1$delta^2*temp%*%Lam%*%t(temp)%*%temp%*%Lam%*%t(temp)+MLE1$delta*temp%*%Lam1%*%t(temp)
-        
-        d[i] <- (1-var.bhats.ratio[i])*((1-var.bhats.ratio[i])>=0) #to record me=sum(d)
-        stats[i]<- 2*(MLE1$ML-MLE0$ML)
-        ps[i]<-if(stats[i]<=1e-100) 1 else pchisq(stats[i],1,lower.tail=F)/2#20160619
-        
-      }else{ps[i]<-1}
-    }
-    return(list(ID=1:t,ps=ps,bhats=bhats,deltas=deltas,d=d,ML1s=ML1s,ML0s=ML0s,stats=stats,vgs=vgs,ves=ves))
-    
-  } 
-  ######################################
-  emma.REMLE0.c <- function(Y_c,W_c){
-    
-    n <- length(Y_c)
-    stopifnot(nrow(W_c)==n)
-    M_c <-diag(1,n)-W_c%*%solve(crossprod(W_c,W_c))%*%t(W_c)
-    eig <-eigen(M_c)
-    t <-qr(W_c)$rank
-    v <-n-t
-    U_R <-eig$vector[,1:v]
-    etas<-crossprod(U_R,Y_c)
-    LL <- 0.5*v*(log(v/(2*pi))-1-log(sum(etas*etas)))
-    return(list(REML=LL))
-    
-  }
-  
-  emma.REML.LRT.c.noalpha <- function(ys, xs, K=1, Z, X0, ngrids=100, llim=-10, ulim=10, esp=1e-10) {
-    #K=1,Z=C:n*n,X0=W:n*c(or,1_n*1),ys:n*1
-    
-    stopifnot(K == 1)
-    
-    ys <- Z%*%ys   
-    xs <- Z%*%xs
-    X0 <- Z%*%X0
-    
-    ys<-as.matrix(ys)
-    xs<-as.matrix(xs)
-    X0<-as.matrix(X0)
-    
     
     n <- nrow(ys)
-    m <- nrow(xs)
     t <- ncol(xs)
-    q0 <- ncol(X0)
+    q<- if ( is.matrix(X0) ) ncol(X0) else 1
+    v<-n-q
     
     MLE0<-emma.REMLE0.c(ys,X0)
     
@@ -1355,51 +1168,45 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
     ML0s <- vector(length=t)
     vgs <- vector(length=t)
     ves <- vector(length=t)
-    deltas <- vector(length=t)
+    lambdas <- vector(length=t)
     bhats<-vector(length=t)
     
-    var.bhats.ratio <- vector(length=t)
     d <- vector(length=t)
     
     stats <- vector(length=t)
     ps <- vector(length=t)
     
+    M<-MLE0$M
+    M.y<-M%*%ys
+    yMy<-crossprod(ys,M.y)
+    
     for (i in 1:t){
       
-      vids <- !is.na(xs[,i])
-      xv <- xs[vids,i]
+      #MLE1 <- emma.REMLE.c (ys, x0v, K=1, xv, qr.X0,ngrids=100, llim=-10, ulim=10,esp=1e-10, eig.L = NULL, eig.R = NULL)#20181112
+      MLE1 <- FASTmrEMMA.REMLE.c(X=xs[,i],M,M.y,yMy,v, ngrids=100, llim=-10, ulim=10, esp=1e-10)
       
-      yv <- ys[vids]
-      x0v<-X0[vids,]
-      
-      MLE1 <- emma.REMLE.c (yv, x0v, K=1, xv, ngrids=100, llim=-10, ulim=10,esp=1e-10, eig.L = NULL, eig.R = NULL)
-      if(length(MLE1$vg)!=0){
+      if(is.na(MLE1$REML)==TRUE){
+        ps[i]<-1
+      }else{
         ML1s[i]<-MLE1$REML
         ML0s[i]<-MLE0$REML
         vgs[i]<-MLE1$vg
         ves[i]<-MLE1$ve
-        deltas[i] <- MLE1$delta
+        lambdas[i] <- MLE1$delta
+        ###################
+        d[i] <- 1/(1+MLE1$delta*MLE1$delta1)
+        #bhats[i]<-MLE1$lambda*MLE1$xMy/(1+MLE1$lambda*MLE1$delta1)
+        bhats[i]<-MLE1$delta*MLE1$xMy/d[i]
+        #to record me=sum(d) 
         
-        nv<-length(MLE1$etas)
-        Lam<-diag(c(1/(MLE1$delta*MLE1$lambda+1),rep(1,nv-1)))
-        Lam1 <- diag(c(1/(MLE1$delta*MLE1$lambda+1)^2,rep(1,nv-1)))
-        temp <- crossprod(xv,MLE1$U_R)
-        bhats[i] <- MLE1$delta*temp%*%Lam%*%MLE1$etas
-        var.bhats.ratio[i] <- MLE1$delta^2*temp%*%Lam%*%t(temp)%*%temp%*%Lam%*%t(temp)+MLE1$delta*temp%*%Lam1%*%t(temp)
-        
-        d[i] <- (1-var.bhats.ratio[i])*((1-var.bhats.ratio[i])>=0) #to record me=sum(d)
         stats[i]<- 2*(MLE1$REML-MLE0$REML)
         ps[i]<-if(stats[i]<=1e-100) 1 else pchisq(stats[i],1,lower.tail=F)/2
-        
-      }else{
-        ps[i]<-1
       }
     }
-    return(list(ID=1:t,ps=ps,bhats=bhats,deltas=deltas,d=d,ML1s=ML1s,ML0s=ML0s,stats=stats,vbs=vgs,ves=ves))
     
+    return(list(ID=1:t,ps=ps,bhats=bhats,lambdas=lambdas,d=d,ML1s=ML1s,ML0s=ML0s,stats=stats,vbs=vgs,ves=ves))
   }
   ######################################
-  
   fixed.REMLE0.c <- function(Y_c,W_c){
     
     n <- length(Y_c)
@@ -1411,10 +1218,9 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
     
     LL <- 0.5*v*(log(v/(2*pi))-1-log(sum(etas*etas)))
     return(list(REML=LL))
+    
   }
-  
-  
-  fixed.REML.LRT.c.sim<-function(ys,xs,Z,X0){
+  fixed.REML.LRT.c.sim<-function(ys=Y.orig[,i,drop=F], xs=X.ad.t4, Z=C2, X0=W.orig){
     
     ys <- Z%*%ys   
     xs <- Z%*%xs
@@ -1424,17 +1230,14 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
     xs<-as.matrix(xs)
     X0<-as.matrix(X0)
     
-    
     n <- nrow(ys)
     m <- nrow(xs)
     t <- ncol(xs)
     stats <- vector(length=t)
     ps <- vector(length=t)
     
-    
     ML1s <- vector(length=t)
     ML0s <- vector(length=t)
-    
     
     REML0.c<-fixed.REMLE0.c(ys,X0)
     
@@ -1462,15 +1265,12 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
       ML0s[i]<-REML0.c$REML
     }
     return(list(ID=1:t,ps=ps,ML1s=ML1s,ML0s=ML0s,stats=stats))
-  } 
-  
-  
-  ##########################
-  
-  
-  fixed.ML.LRT.c.sim<-function(ys, xs, Z, X0){
     
-    ys <- Z%*%ys              
+  } 
+  ##########################
+  fixed.ML.LRT.c.sim<-function(ys=Y.orig[,i,drop=F], xs=X.ad.t4, Z=C2, X0=W.orig){
+    
+    ys <- Z%*%ys   
     xs <- Z%*%xs
     X0 <- Z%*%X0
     
@@ -1478,14 +1278,12 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
     xs<-as.matrix(xs)
     X0<-as.matrix(X0)
     
-    
     n <- nrow(ys)
     m <- nrow(xs)
     t <- ncol(xs)
     
     stats <- vector(length=t)
     ps <- vector(length=t)
-    
     
     ML1s <- vector(length=t)
     ML0s <- vector(length=t)
@@ -1508,11 +1306,8 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
       
       ML1s[i]<-REML1.c$ML
       ML0s[i]<-REML0.c$ML
-      
-      
     }
     return(list(ID=1:t,ps=ps,ML1s=ML1s,ML0s=ML0s,stats=stats))
-    
   } 
   
   
@@ -1602,265 +1397,244 @@ WenS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,Likelihood=NULL,
     return (list(lod=lod,ps=ps))
   }
   
-  
-  mxmp<-mx[,1:2]
-  
-  if((is.null(pheRaw)==TRUE)&(is.null(yygg)==TRUE)&(is.null(phe)==TRUE)&(is.null(chr_name)==TRUE)&(is.null(v.map)==TRUE)&
-    (is.null(gen.raw)==TRUE)&(is.null(a.gen.orig)==TRUE)&(is.null(d.gen.orig)==TRUE)&(is.null(n)==TRUE)&
-    (is.null(names.insert2)==TRUE)&(is.null(X.ad.tran.data)==TRUE)&(is.null(X.ad.t4)==TRUE)&(is.null(dir)==TRUE)){
- 
-   return(mxmp) 
-  
-  }else{
-  
-  rownames(mxmp)<-NULL
-  mxmp<-as.data.frame(mxmp,stringsAsFactors = F)
-  mxmp[,1:2]<-sapply(mxmp[,1:2],as.numeric)
-
-  m.a<-dim(v.map)[1]
-  Y.orig<-as.matrix(phe[,NUM])
-  Y.name<-pheRaw[1,NUM+1]
-  ######################################
-  
-  W.orig<-matrix(1,n,1) 
-  id.ind<-which(!is.na(Y.orig))
-  Y.part.1<-Y.orig[id.ind,,drop=F]
-  
-  if(is.null(yygg)==FALSE){
-    xenvir<-cbind(matrix(1,n,1),yygg) 
-    xenvir<-xenvir[id.ind,]
-    beta<-solve(t(xenvir)%*%xenvir)%*%t(xenvir)%*%Y.part.1
-    Y.part.1<-Y.part.1-xenvir%*%beta+W.orig[id.ind,]
-  }
-  bb.adalasso<-NULL
-  #kinship matrix#################
-  a.K<-kinship.F2(t(a.gen.orig[,id.ind]))
-  d.K<-kinship.F2(t(d.gen.orig[,id.ind]))
-  kinship<-list(a.K,d.K)
-  data.wy<-cbind(Y.part.1,rep(1,times=length(Y.part.1)))
-  vars<-suppressWarnings(mixed.vars(data.wy,kinship,optim.speed=TRUE))
-  delta.aK.init<-vars$tau.kk[1]/vars$tau.kk[3]
-  delta.dK.init<-vars$tau.kk[2]/vars$tau.kk[3]
-  
-  remle.B<-IRMMA.aK.dK.effects.B(Z=NULL,a.K,d.K,delta.aK.init,delta.dK.init,complete=TRUE)
-  C2<-remle.B$C.g
-  if(flag==1){
-    if (Likelihood=="REML"){
-      REML.LRT.c2<-emma.REML.LRT.c.noalpha(ys=Y.orig[id.ind,,drop=F], xs=X.ad.t4[id.ind,], K=1, Z=C2, X0=W.orig[id.ind,,drop=F], ngrids=100, llim=-10, ulim=10, esp=1e-10)
-    }else{
-      REML.LRT.c2<-emma.ML.LRT.c.noalpha(ys=Y.orig[id.ind,,drop=F], xs=X.ad.t4[id.ind,], K=1, Z=C2, X0=W.orig[id.ind,,drop=F], ngrids=100, llim=-10, ulim=10, esp=1e-10)
+    mxmp<-mx[,1:2]
+    rownames(mxmp)<-NULL
+    mxmp<-as.data.frame(mxmp,stringsAsFactors = F)
+    mxmp[,1:2]<-sapply(mxmp[,1:2],as.numeric)
+    
+    m.a<-dim(v.map)[1]
+    Y.orig<-as.matrix(phe[,NUM])
+    Y.name<-pheRaw[1,NUM+1]
+    ######################################
+    
+    W.orig<-matrix(1,n,1) 
+    id.ind<-which(!is.na(Y.orig))
+    Y.part.1<-Y.orig[id.ind,,drop=F]
+    
+    if(is.null(yygg)==FALSE){
+      xenvir<-cbind(matrix(1,n,1),yygg) 
+      xenvir<-xenvir[id.ind,]
+      beta<-solve(t(xenvir)%*%xenvir)%*%t(xenvir)%*%Y.part.1
+      Y.part.1<-Y.part.1-xenvir%*%beta+W.orig[id.ind,]
     }
-  }else{
-    if(Likelihood=="REML"){
-      REML.LRT.c2<-fixed.REML.LRT.c.sim(ys=Y.orig[id.ind,,drop=F], xs=X.ad.t4[id.ind,], Z=C2, X0=W.orig[id.ind,,drop=F])
-    }else{
-      REML.LRT.c2<-fixed.ML.LRT.c.sim(ys=Y.orig[id.ind,,drop=F], xs=X.ad.t4[id.ind,], Z=C2, X0=W.orig[id.ind,,drop=F])
-    }
-  }
-  REML.LRT.c3<-data.frame(REML.LRT.c2)
-  id.odd<-which(REML.LRT.c3$ID%%2==1)
-  id.even<-which(REML.LRT.c3$ID%%2==0)
-  LOD.a<--log10(REML.LRT.c3[id.odd,]$ps)
-  LOD.d<--log10(REML.LRT.c3[id.even,]$ps)
-  #########################3
-  optids.a<-peak.id(LOD.a)
-  optids.d<-peak.id(LOD.d)
-  
-  res1a<-cbind(v.map[,2:3],as.matrix(LOD.a))
-  res1d<-cbind(v.map[,2:3],as.matrix(LOD.d))
-  ###############################################
-  ################################33
-  a.eb.loc.1<-optids.a*2-1
-  a.eb.loc.2<-c(a.eb.loc.1,a.eb.loc.1+1)
-  d.eb.loc.1<-optids.d*2
-  d.eb.loc.2<-c(d.eb.loc.1,d.eb.loc.1-1)
-  ad.eb.loc.0<-union(a.eb.loc.2,d.eb.loc.2)
-  ad.eb.loc.0<-ad.eb.loc.0[order(ad.eb.loc.0)]#xdata,a+d
-  #########################################3
-  xdata.ad<-X.ad.t4[id.ind,ad.eb.loc.0]
-  X.ad.eb.names.0<-X.ad.tran.data[ad.eb.loc.0,1:8]
-  
-  set.seed(11001)  #user's options
-  model1<-adalasso(X=xdata.ad,y=Y.part.1,k=10,use.Gram = T,both=T)
-  adalasso.beta<-model1$coefficients.adalasso
-  
-  bb<-matrix(0,nrow=2*m.a,ncol=1)
-  bb[ad.eb.loc.0,]<-adalasso.beta
-  
-  lrt.0<-likelihood.a.d.F2(xxn=W.orig[id.ind,,drop=F],xxx=xdata.ad,yn=Y.part.1,bbo=bb[ad.eb.loc.0,],intercept=model1$intercept.adalasso)
-  id.lrt.0.a<-which(lrt.0$lod>=sLOD) #
-  
-  if(length(id.lrt.0.a)==0){
-    warning("No QTL were detected!")
-  }else if(length(id.lrt.0.a)>0){
+    bb.adalasso<-NULL
+    #kinship matrix#################
+    a.K<-kinship.F2(t(a.gen.orig[,id.ind]))
+    d.K<-kinship.F2(t(d.gen.orig[,id.ind]))
+    kinship<-list(a.K,d.K)
+    data.wy<-cbind(Y.part.1,rep(1,times=length(Y.part.1)))
+    vars<-suppressWarnings(mixed.vars(data.wy,kinship,optim.speed=TRUE))
+    delta.aK.init<-vars$tau.kk[1]/vars$tau.kk[3]
+    delta.dK.init<-vars$tau.kk[2]/vars$tau.kk[3]
     
-  
-  id.lrt.0.d<-id.lrt.0.a+1
-  id.lrt.0.ad<-c(id.lrt.0.a,id.lrt.0.d)
-  id.lrt.0.ad<-id.lrt.0.ad[order(id.lrt.0.ad)]
-  
-  opt.adalasso<-data.frame(X.ad.eb.names.0[id.lrt.0.a,],effect.a=bb[ad.eb.loc.0,][id.lrt.0.a],effect.d=bb[ad.eb.loc.0,][id.lrt.0.d],LOD=lrt.0$lod[id.lrt.0.a],ps=lrt.0$ps[id.lrt.0.a])
-  
-  ##########################
-  if(flagrqtl=="TRUE"){
-    
-    # suppressWarnings(dir.create(path="temp",recursive = T))
-    # dir1<-"temp/"
-    
-    b.qtl.1<-bb[ad.eb.loc.0,][id.lrt.0.ad]
-    b.id.qtl<-which(b.qtl.1!=0)
-    X.qtl<-X.ad.t4[id.ind,ad.eb.loc.0][,id.lrt.0.ad][,b.id.qtl]
-    XY.qtl<-data.frame(Y.part.1,X.qtl)
-    model.qtl.lm<-lm(Y.part.1~X.qtl,data = XY.qtl)
-    
-    b.qtl.2<-matrix(0,nrow = length(b.qtl.1),ncol=1)
-    b.qtl.2[b.id.qtl]<-model.qtl.lm$coefficients[-1]
-    
-    ######################
-    
-    dif.1<-diff(opt.adalasso$locus)
-    dif.2<-diff(opt.adalasso$pos)
-    
-    pos.options<-5 
-    locus.options<-6 
-    
-    
-    dif.id<-which(dif.1>0&dif.1<=locus.options&dif.2>0&dif.2<=pos.options)
-    dif.id.ad.0<-c(dif.id,dif.id+1)
-    
-    dif.id.ad.0<-dif.id.ad.0[order(dif.id.ad.0)]
-    qtl.id<-opt.adalasso[dif.id.ad.0,]
-    dif.id.n<-length(dif.id.ad.0)
-    dif.id.ad.1<-c()
-    if(dif.id.n!=0){
-      opt.qtl.all<-data.frame()
-      for(ii in seq(1,dif.id.n,by=2)){
-        if(((qtl.id[ii,]$effect.a==0&qtl.id[ii,]$effect.d!=0)&(qtl.id[ii+1,]$effect.a!=0&qtl.id[ii+1,]$effect.d==0))
-           |((qtl.id[ii,]$effect.a!=0&qtl.id[ii,]$effect.d==0)&(qtl.id[ii+1,]$effect.a==0&qtl.id[ii+1,]$effect.d!=0))
-        ){
-          dif.id.ad.1<-c(dif.id.ad.1,dif.id.ad.0[c(ii,ii+1)])
-          
-          b.qtl.3<-b.qtl.2
-          id.omit<-c(2*c(dif.id.ad.0[c(ii,ii+1)])-1,2*c(dif.id.ad.0[c(ii,ii+1)]))
-          b.qtl.3[id.omit]<-0
-          Y.part.2<-Y.part.1-X.ad.t4[id.ind,ad.eb.loc.0][,id.lrt.0.ad]%*%b.qtl.3
-          Y.part.3<-matrix(NA,nrow=n,ncol = 1)
-          Y.part.3[id.ind,]<-Y.part.2
-          
-          im.phe.rot<-t(cbind(Y.part.3,1:n))
-          row.names(im.phe.rot)<-c(Y.name,"id")
-          
-          write.table(im.phe.rot,file=paste(dir,"/",NUM,"_phe_rot_",(ii+1)/2,".csv",sep=""),sep=",",row.names = T,col.names = F)
-          ################
-          marker.options<-5
-          gen.qtl.id.left<-which(gen.raw[,1]==qtl.id[ii,]$leftmarker)
-          gen.qtl.id.right<-which(gen.raw[,1]==qtl.id[ii+1,]$rightmarker)
-          gen.qtl<-gen.raw[c((gen.qtl.id.left-marker.options):(gen.qtl.id.right+marker.options)),]
-          
-          im.gen.rot<-rbind(c("id","","",1:n),gen.qtl)
-          write.table(im.gen.rot,file=paste(dir,"/",NUM,"_gen_rot_",(ii+1)/2,".csv",sep=""),sep=",",row.names = F,col.names = F)
-          
-          #####################################
-          #rqtl
-          data.qtl<-read.cross("csvsr",dir,paste(NUM,"_gen_rot_",(ii+1)/2,".csv",sep=""),paste(NUM,"_phe_rot_",(ii+1)/2,".csv",sep=""))
-          data.qtl.1<-jittermap(data.qtl)
-          data.qtl.2<-calc.genoprob(data.qtl.1,step=1,error.prob = 0.001)
-          
-          out.em<-suppressWarnings(scanone(data.qtl.2,method="em"))
-          
-          out1<-summary(out.em,threshold = 2.5)
-          
-          data.qtl.3<-sim.geno(data.qtl.1,step=1,n.draws = 1,error.prob =0.001 )
-          qtl<-makeqtl(data.qtl.3,chr =out1$chr,pos=out1$pos )
-          out2<-suppressWarnings(fitqtl(data.qtl.3,qtl=qtl,formula = y~Q1,dropone=F,get.ests = T))
-          
-          out3<-summary(out2)
-          row.names(out3$ests)[2]
-          
-          opt.qtl<-data.frame(id.1=row.names(out1),id.2=row.names(out3$ests)[2],out1[,1:2],effect.a=out3$ests[2],effect.d=out3$ests[3],LOD=out1[,3],ps=out3$result.full[1,6],stringsAsFactors = F)
-          
-          if(opt.qtl$id.1%in%gen.raw[,1]){
-            
-            names.qtl.1<-names.insert2[which(names.insert2$chr==as.integer(as.character(opt.qtl$chr))),]
-            
-            names.left<-findInterval(opt.qtl$pos,names.qtl.1$pos)
-            names.qtl.2<-names.qtl.1[names.left-1,]
-            opt.qtl.lr<-data.frame(names.qtl.2,effect.a=opt.qtl$effect.a,effect.d=opt.qtl$effect.d,LOD=opt.qtl$LOD,ps=opt.qtl$ps,stringsAsFactors=F)
-            
-          }else{
-            
-            gen.qtl.1<-gen.qtl[which(gen.qtl[,2]==as.integer(as.character(opt.qtl$chr))),]
-            left1<-findInterval(opt.qtl$pos,gen.qtl.1[,3])
-            
-            #################
-            names.qtl.1<-names.insert2[which(names.insert2$chr==as.integer(as.character(opt.qtl$chr))),]
-            names.left<-findInterval(opt.qtl$pos,names.qtl.1$pos)
-            names.qtl.2<-names.qtl.1[names.left,]
-            opt.qtl.lr<-data.frame(names.qtl.2[,1:2],locus=NA,pos=opt.qtl$pos,insertflag=0,leftmarker=names.qtl.2$leftmarker,rightmarker=gen.qtl.1[left1+1,1],id.all=names.qtl.2$id.all-1,effect.a=opt.qtl$effect.a,effect.d=opt.qtl$effect.d,LOD=opt.qtl$LOD,ps=opt.qtl$ps,stringsAsFactors=F)
-            
-          }
-          opt.qtl.all<-rbind(opt.qtl.all,opt.qtl.lr)
-        }
+    remle.B<-IRMMA.aK.dK.effects.B(Z=NULL,a.K,d.K,delta.aK.init,delta.dK.init,complete=TRUE)
+    C2<-remle.B$C.g
+    if(flag==1){
+      if (Likelihood=="REML"){
+        REML.LRT.c2<-FASTmrEMMA.REML.LRT.c(ys=Y.orig[id.ind,,drop=F], xs=X.ad.t4[id.ind,],Z=C2, X0=W.orig[id.ind,,drop=F], ngrids=100, llim=-10, ulim=10, esp=1e-10)
+      }else{
+        REML.LRT.c2<-FASTmrEMMA.ML.LRT.c(ys=Y.orig[id.ind,,drop=F], xs=X.ad.t4[id.ind,],Z=C2, X0=W.orig[id.ind,,drop=F], ngrids=100, llim=-10, ulim=10, esp=1e-10)
       }
-      opt.im.all<-rbind(opt.adalasso[-dif.id.ad.1,],opt.qtl.all)
-      opt.im.all.0<-opt.im.all[order(opt.im.all$chr,opt.im.all$pos),]
-      
     }else{
-      opt.im.all.0<-opt.adalasso
-    }#if (length(dif.id.ad.0)!=0) end
+      if(Likelihood=="REML"){
+        REML.LRT.c2<-fixed.REML.LRT.c.sim(ys=Y.orig[id.ind,,drop=F], xs=X.ad.t4[id.ind,], Z=C2, X0=W.orig[id.ind,,drop=F])
+      }else{
+        REML.LRT.c2<-fixed.ML.LRT.c.sim(ys=Y.orig[id.ind,,drop=F], xs=X.ad.t4[id.ind,], Z=C2, X0=W.orig[id.ind,,drop=F])
+      }
+    }
+    REML.LRT.c3<-data.frame(REML.LRT.c2)
+    id.odd<-which(REML.LRT.c3$ID%%2==1)
+    id.even<-which(REML.LRT.c3$ID%%2==0)
+    LOD.a<--log10(REML.LRT.c3[id.odd,]$ps)
+    LOD.d<--log10(REML.LRT.c3[id.even,]$ps)
+    #########################3
+    optids.a<-peak.id(LOD.a)
+    optids.d<-peak.id(LOD.d)
     
-  }else{
-    opt.im.all.0<-opt.adalasso
-  }
-  ###################################
-  X.r.id<-c(opt.im.all.0$id.all,opt.im.all.0$id.all+1)
-  X.r.id<-X.r.id[order(X.r.id)]
-  
-  X.r<-X.ad.t4[id.ind,X.r.id]
-  num.b<-length(X.r.id)
-  b.r<-matrix(0,nrow =num.b)
-  b.r[seq(1,num.b,by=2),]<-opt.im.all.0$effect.a
-  b.r[seq(2,num.b,by=2),]<-opt.im.all.0$effect.d
-  
-  X.intc<-matrix(1,nrow=length(id.ind),ncol=1)
-  intc<-model1$intercept.adalasso
-  
-  sigma.e2<-as.numeric(crossprod(Y.part.1-X.r%*%b.r-X.intc%*%intc,Y.part.1-X.r%*%b.r-X.intc%*%intc)/length(id.ind))
-  
-  r2.g<-as.numeric(sum(0.5*opt.im.all.0$effect.a^2+0.25*opt.im.all.0$effect.d^2))
-  ge.all<-max(var(Y.part.1),(r2.g+sigma.e2))
-  r2.p<-r2.g/ge.all
-  r2.new<-(0.5*opt.im.all.0$effect.a^2+0.25*opt.im.all.0$effect.d^2)/ge.all
-  
-  Genei<-0.5*opt.im.all.0$effect.a^2+0.25*opt.im.all.0$effect.d^2
-  vare<- c(round(sigma.e2,4),matrix("",length(Genei)-1,1))
-  varp<- c(round(var(Y.part.1),4),matrix("",length(Genei)-1,1))
-  
-  #######################
-  xdata.opt.adalasso<-data.frame(opt.im.all.0,r2=r2.new*100,PVE=r2.p*100,Genei,vare,varp)
-  colnames(xdata.opt.adalasso)[c(13,14)]<-c("r^2(%)","PVE(%)")
-  aa.adalasso<-data.frame(nametrait=rep(Y.name,times=dim(opt.im.all.0)[1]),xdata.opt.adalasso,stringsAsFactors=F)
-  bb.adalasso<-aa.adalasso[,-c(2,5,6,9,13,15)]
-
-  result<-bb.adalasso[,c(1,2,3,6,7,8,4,5,10,9,11,12)]
-  rownames(result)<-NULL
-  colnames(result)<-c("Trait","Chr","Position(cM)","Effect.a","Effect.d","LOD","Left_marker","right_marker","Var_Genet","r2(%)","Var_Error","Var_Phen(total)")
- 
-  galaxyy1<-as.matrix(result[,c(2,3,6)])
-  # unlink(dir()[dir()=="temp"],recursive = T)
-  }
-  output<-list(result=result,mxmp=mxmp,galaxyy1=galaxyy1,res1a=res1a,res1d=res1d,chr_name=chr_name)
-  return(output)
-  }
-}
-
-
-
-
-
-
-
-
-
+    res1a<-cbind(v.map[,2:3],as.matrix(LOD.a))
+    res1d<-cbind(v.map[,2:3],as.matrix(LOD.d))
+    ###############################################
+    ################################33
+    a.eb.loc.1<-optids.a*2-1
+    a.eb.loc.2<-c(a.eb.loc.1,a.eb.loc.1+1)
+    d.eb.loc.1<-optids.d*2
+    d.eb.loc.2<-c(d.eb.loc.1,d.eb.loc.1-1)
+    ad.eb.loc.0<-union(a.eb.loc.2,d.eb.loc.2)
+    ad.eb.loc.0<-ad.eb.loc.0[order(ad.eb.loc.0)]#xdata,a+d
+    #########################################3
+    xdata.ad<-X.ad.t4[id.ind,ad.eb.loc.0]
+    X.ad.eb.names.0<-X.ad.tran.data[ad.eb.loc.0,1:8]
     
+    set.seed(11001)  #user's options
+    model1<-adalasso(X=xdata.ad,y=Y.part.1,k=10,use.Gram = T,both=T)
+    adalasso.beta<-model1$coefficients.adalasso
     
+    bb<-matrix(0,nrow=2*m.a,ncol=1)
+    bb[ad.eb.loc.0,]<-adalasso.beta
+    
+    lrt.0<-likelihood.a.d.F2(xxn=W.orig[id.ind,,drop=F],xxx=xdata.ad,yn=Y.part.1,bbo=bb[ad.eb.loc.0,],intercept=model1$intercept.adalasso)
+    id.lrt.0.a<-which(lrt.0$lod>=sLOD) #
+    
+    if(length(id.lrt.0.a)==0){
+      warning("No QTL were detected!")
+    }else if(length(id.lrt.0.a)>0){
+      
+      
+      id.lrt.0.d<-id.lrt.0.a+1
+      id.lrt.0.ad<-c(id.lrt.0.a,id.lrt.0.d)
+      id.lrt.0.ad<-id.lrt.0.ad[order(id.lrt.0.ad)]
+      
+      opt.adalasso<-data.frame(X.ad.eb.names.0[id.lrt.0.a,],effect.a=bb[ad.eb.loc.0,][id.lrt.0.a],effect.d=bb[ad.eb.loc.0,][id.lrt.0.d],LOD=lrt.0$lod[id.lrt.0.a],ps=lrt.0$ps[id.lrt.0.a])
+      
+      ##########################
+      if(flagrqtl=="TRUE"){
+        
+        # suppressWarnings(dir.create(path="temp",recursive = T))
+        # dir1<-"temp/"
+        
+        b.qtl.1<-bb[ad.eb.loc.0,][id.lrt.0.ad]
+        b.id.qtl<-which(b.qtl.1!=0)
+        X.qtl<-X.ad.t4[id.ind,ad.eb.loc.0][,id.lrt.0.ad][,b.id.qtl]
+        XY.qtl<-data.frame(Y.part.1,X.qtl)
+        model.qtl.lm<-lm(Y.part.1~X.qtl,data = XY.qtl)
+        
+        b.qtl.2<-matrix(0,nrow = length(b.qtl.1),ncol=1)
+        b.qtl.2[b.id.qtl]<-model.qtl.lm$coefficients[-1]
+        
+        ######################
+        
+        dif.1<-diff(opt.adalasso$locus)
+        dif.2<-diff(opt.adalasso$pos)
+        
+        pos.options<-5 
+        locus.options<-6 
+        
+        
+        dif.id<-which(dif.1>0&dif.1<=locus.options&dif.2>0&dif.2<=pos.options)
+        dif.id.ad.0<-c(dif.id,dif.id+1)
+        
+        dif.id.ad.0<-dif.id.ad.0[order(dif.id.ad.0)]
+        qtl.id<-opt.adalasso[dif.id.ad.0,]
+        dif.id.n<-length(dif.id.ad.0)
+        dif.id.ad.1<-c()
+        if(dif.id.n!=0){
+          opt.qtl.all<-data.frame()
+          for(ii in seq(1,dif.id.n,by=2)){
+            if(((qtl.id[ii,]$effect.a==0&qtl.id[ii,]$effect.d!=0)&(qtl.id[ii+1,]$effect.a!=0&qtl.id[ii+1,]$effect.d==0))
+               |((qtl.id[ii,]$effect.a!=0&qtl.id[ii,]$effect.d==0)&(qtl.id[ii+1,]$effect.a==0&qtl.id[ii+1,]$effect.d!=0))
+            ){
+              dif.id.ad.1<-c(dif.id.ad.1,dif.id.ad.0[c(ii,ii+1)])
+              
+              b.qtl.3<-b.qtl.2
+              id.omit<-c(2*c(dif.id.ad.0[c(ii,ii+1)])-1,2*c(dif.id.ad.0[c(ii,ii+1)]))
+              b.qtl.3[id.omit]<-0
+              Y.part.2<-Y.part.1-X.ad.t4[id.ind,ad.eb.loc.0][,id.lrt.0.ad]%*%b.qtl.3
+              Y.part.3<-matrix(NA,nrow=n,ncol = 1)
+              Y.part.3[id.ind,]<-Y.part.2
+              
+              im.phe.rot<-t(cbind(Y.part.3,1:n))
+              row.names(im.phe.rot)<-c(Y.name,"id")
+              
+              write.table(im.phe.rot,file=paste(dir,"/",NUM,"_phe_rot_",(ii+1)/2,".csv",sep=""),sep=",",row.names = T,col.names = F)
+              ################
+              marker.options<-5
+              gen.qtl.id.left<-which(gen.raw[,1]==qtl.id[ii,]$leftmarker)
+              gen.qtl.id.right<-which(gen.raw[,1]==qtl.id[ii+1,]$rightmarker)
+              gen.qtl<-gen.raw[c((gen.qtl.id.left-marker.options):(gen.qtl.id.right+marker.options)),]
+              
+              im.gen.rot<-rbind(c("id","","",1:n),gen.qtl)
+              write.table(im.gen.rot,file=paste(dir,"/",NUM,"_gen_rot_",(ii+1)/2,".csv",sep=""),sep=",",row.names = F,col.names = F)
+              
+              #####################################
+              #rqtl
+              data.qtl<-read.cross("csvsr",dir,paste(NUM,"_gen_rot_",(ii+1)/2,".csv",sep=""),paste(NUM,"_phe_rot_",(ii+1)/2,".csv",sep=""))
+              data.qtl.1<-jittermap(data.qtl)
+              data.qtl.2<-calc.genoprob(data.qtl.1,step=1,error.prob = 0.001)
+              
+              out.em<-suppressWarnings(scanone(data.qtl.2,method="em"))
+              
+              out1<-summary(out.em,threshold = 2.5)
+              
+              data.qtl.3<-sim.geno(data.qtl.1,step=1,n.draws = 1,error.prob =0.001 )
+              qtl<-makeqtl(data.qtl.3,chr =out1$chr,pos=out1$pos )
+              out2<-suppressWarnings(fitqtl(data.qtl.3,qtl=qtl,formula = y~Q1,dropone=F,get.ests = T))
+              
+              out3<-summary(out2)
+              row.names(out3$ests)[2]
+              
+              opt.qtl<-data.frame(id.1=row.names(out1),id.2=row.names(out3$ests)[2],out1[,1:2],effect.a=out3$ests[2],effect.d=out3$ests[3],LOD=out1[,3],ps=out3$result.full[1,6],stringsAsFactors = F)
+              
+              if(opt.qtl$id.1%in%gen.raw[,1]){
+                
+                names.qtl.1<-names.insert2[which(names.insert2$chr==as.integer(as.character(opt.qtl$chr))),]
+                
+                names.left<-findInterval(opt.qtl$pos,names.qtl.1$pos)
+                names.qtl.2<-names.qtl.1[names.left-1,]
+                opt.qtl.lr<-data.frame(names.qtl.2,effect.a=opt.qtl$effect.a,effect.d=opt.qtl$effect.d,LOD=opt.qtl$LOD,ps=opt.qtl$ps,stringsAsFactors=F)
+                
+              }else{
+                
+                gen.qtl.1<-gen.qtl[which(gen.qtl[,2]==as.integer(as.character(opt.qtl$chr))),]
+                left1<-findInterval(opt.qtl$pos,gen.qtl.1[,3])
+                
+                #################
+                names.qtl.1<-names.insert2[which(names.insert2$chr==as.integer(as.character(opt.qtl$chr))),]
+                names.left<-findInterval(opt.qtl$pos,names.qtl.1$pos)
+                names.qtl.2<-names.qtl.1[names.left,]
+                opt.qtl.lr<-data.frame(names.qtl.2[,1:2],locus=NA,pos=opt.qtl$pos,insertflag=0,leftmarker=names.qtl.2$leftmarker,rightmarker=gen.qtl.1[left1+1,1],id.all=names.qtl.2$id.all-1,effect.a=opt.qtl$effect.a,effect.d=opt.qtl$effect.d,LOD=opt.qtl$LOD,ps=opt.qtl$ps,stringsAsFactors=F)
+                
+              }
+              opt.qtl.all<-rbind(opt.qtl.all,opt.qtl.lr)
+            }
+          }
+          opt.im.all<-rbind(opt.adalasso[-dif.id.ad.1,],opt.qtl.all)
+          opt.im.all.0<-opt.im.all[order(opt.im.all$chr,opt.im.all$pos),]
+          
+        }else{
+          opt.im.all.0<-opt.adalasso
+        }#if (length(dif.id.ad.0)!=0) end
+        
+      }else{
+        opt.im.all.0<-opt.adalasso
+      }
+      ###################################
+      X.r.id<-c(opt.im.all.0$id.all,opt.im.all.0$id.all+1)
+      X.r.id<-X.r.id[order(X.r.id)]
+      
+      X.r<-X.ad.t4[id.ind,X.r.id]
+      num.b<-length(X.r.id)
+      b.r<-matrix(0,nrow =num.b)
+      b.r[seq(1,num.b,by=2),]<-opt.im.all.0$effect.a
+      b.r[seq(2,num.b,by=2),]<-opt.im.all.0$effect.d
+      
+      X.intc<-matrix(1,nrow=length(id.ind),ncol=1)
+      intc<-model1$intercept.adalasso
+      
+      sigma.e2<-as.numeric(crossprod(Y.part.1-X.r%*%b.r-X.intc%*%intc,Y.part.1-X.r%*%b.r-X.intc%*%intc)/length(id.ind))
+      
+      r2.g<-as.numeric(sum(0.5*opt.im.all.0$effect.a^2+0.25*opt.im.all.0$effect.d^2))
+      ge.all<-max(var(Y.part.1),(r2.g+sigma.e2))
+      r2.p<-r2.g/ge.all
+      r2.new<-(0.5*opt.im.all.0$effect.a^2+0.25*opt.im.all.0$effect.d^2)/ge.all
+      
+      Genei<-0.5*opt.im.all.0$effect.a^2+0.25*opt.im.all.0$effect.d^2
+      vare<- c(round(sigma.e2,4),matrix("",length(Genei)-1,1))
+      varp<- c(round(var(Y.part.1),4),matrix("",length(Genei)-1,1))
+      
+      #######################
+      xdata.opt.adalasso<-data.frame(opt.im.all.0,r2=r2.new*100,PVE=r2.p*100,Genei,vare,varp)
+      colnames(xdata.opt.adalasso)[c(13,14)]<-c("r^2(%)","PVE(%)")
+      aa.adalasso<-data.frame(nametrait=rep(Y.name,times=dim(opt.im.all.0)[1]),xdata.opt.adalasso,stringsAsFactors=F)
+      bb.adalasso<-aa.adalasso[,-c(2,5,6,9,13,15)]
+      
+      result<-bb.adalasso[,c(1,2,3,6,7,8,4,5,10,9,11,12)]
+      rownames(result)<-NULL
+      colnames(result)<-c("Trait","Chr","Position(cM)","Effect.a","Effect.d","LOD","Left_marker","right_marker","Var_Genet","r2(%)","Var_Error","Var_Phen(total)")
+      
+      galaxyy1<-as.matrix(result[,c(2,3,6)])
+      
+      # unlink(dir()[dir()=="temp"],recursive = T)
+    }
+    output<-list(result=result,mxmp=mxmp,galaxyy1=galaxyy1,res1a=res1a,res1d=res1d,chr_name=chr_name)
+    return(output)
+  }

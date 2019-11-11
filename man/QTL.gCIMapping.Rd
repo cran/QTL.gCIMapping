@@ -9,17 +9,17 @@ Conduct multiple quantitative trait loci (QTL) mapping under the framework of ra
 \tabular{ll}{
 Package: \tab QTL.gCIMapping\cr
 Type: \tab Package\cr
-Version: \tab 3.1\cr
-Date: \tab 2018-10-16\cr
-Depends: \tab MASS,dplyr,parcor,qtl,doParallel\cr
+Version: \tab 3.2\cr
+Date: \tab 2019-11-8\cr
+Depends: \tab MASS,dplyr,parcor,qtl\cr
 Imports: \tab methods,openxlsx,stringr,Rcpp\cr
 License: \tab GPL version 2 or newer\cr
 LazyLoad: \tab yes\cr
 }
 }
 \usage{
- QTL.gCIMapping(file,fileFormat,fileICIMcov,Population,Model,WalkSpeed,CriLOD,
- Likelihood,flagrqtl,DrawPlot,PlotFormat,Resolution,Trait,dir) 
+QTL.gCIMapping(file,fileFormat,fileICIMcov,Population,Model,WalkSpeed,
+CriLOD,Likelihood,flagrqtl,DrawPlot,PlotFormat,Resolution,Trait,dir) 
  }
 \arguments{
 	\item{file}{File path and name in your computer.}
@@ -43,17 +43,10 @@ Zhang Ya-Wen, Wen Yang-Jun, Wang Shi-Bo, and Zhang Yuan-Ming\cr
 Maintainer: Yuanming Zhang<soyzhang@mail.hzau.edu.cn>
 }
 \references{
-Mapping small-effect and linked quantitative trait loci for complex traits in backcross or DH populations via a multi-locus GWAS methodology.
-Wang Shi-Bo,Wen Yang-Jun,Ren Wen-Long,Ni Yuan-Li,Zhang Jin,Feng Jian-Ying,Zhang Yuan-Ming*
+An efficient multi-locus mixed model framework for the detection of small and linked QTLs in F2.Wen Yang-Jun, Zhang Ya-Wen, Zhang Jin, Feng Jian-Ying, Jim M. Dunwell, Zhang Yuan-Ming*
 }
-\keyword{
- R
-QTL.gCIMapping
-package
-} 
 \examples{
-G=data(f2data)
-QTL.gCIMapping(file=f2data,fileFormat="GCIM",fileICIMcov=NULL,Population="F2",
-Model="Random",WalkSpeed=1,CriLOD=2.5,Likelihood="REML",flagrqtl="FALSE",
-DrawPlot="FALSE",PlotFormat="png",Resolution="Low",Trait=1,dir=tempdir()) 
+G=data(F2data)
+QTL.gCIMapping(file=F2data,Population="F2",WalkSpeed=1,CriLOD=2.5,
+Trait=1,dir=tempdir()) 
 }
