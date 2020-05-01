@@ -17,6 +17,8 @@ Zhang Ya-Wen, Wen Yang-Jun, Wang Shi-Bo, and Zhang Yuan-Ming\cr
 Maintainer: Yuanming Zhang<soyzhang@mail.hzau.edu.cn>
 }
 \examples{
-F2=data(F2data)
+\dontrun{
+data(F2data)
 Readdata(file=F2data,fileFormat="GCIM",fileICIMcov=NULL)
+}
 }

@@ -23,10 +23,15 @@ Zhang Ya-Wen, Wen Yang-Jun, Wang Shi-Bo, and Zhang Yuan-Ming\cr
 Maintainer: Yuanming Zhang<soyzhang@mail.hzau.edu.cn>
 }
 \examples{
-D1=data(DHdata)
+\dontrun{
+data(DHdata)
 readraw<-Readdata(file=DHdata,fileFormat="GCIM",fileICIMcov=NULL)
+###
 DoResult<-Dodata(fileFormat="GCIM",Population="DH",Model="Random",readraw)
-WangF(DoResult$pheRaw,DoResult$genRaw,DoResult$mapRaw1,
-DoResult$yygg1,DoResult$flagRIL,DoResult$cov_en,
+###
+ws<-WangF(pheRaw=DoResult$pheRaw,genRaw=DoResult$genRaw,
+mapRaw1=DoResult$mapRaw1,yygg1=DoResult$yygg1,
+flagRIL=DoResult$flagRIL,cov_en=DoResult$cov_en,
 Population="DH",WalkSpeed=1,CriLOD=2.5)
+}
 }

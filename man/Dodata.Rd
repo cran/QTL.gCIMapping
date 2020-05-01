@@ -18,7 +18,9 @@ Zhang Ya-Wen, Wen Yang-Jun, Wang Shi-Bo, and Zhang Yuan-Ming\cr
 Maintainer: Yuanming Zhang<soyzhang@mail.hzau.edu.cn>
 }
 \examples{
-D1=data(DHdata)
+\dontrun{
+data(DHdata)
 readraw<-Readdata(file=DHdata,fileFormat="GCIM",fileICIMcov=NULL)
-Dodata(fileFormat="GCIM",Population="DH",Model="Random",readraw)
+doda<-Dodata(fileFormat="GCIM",Population="DH",Model="Random",readraw)
+}
 }

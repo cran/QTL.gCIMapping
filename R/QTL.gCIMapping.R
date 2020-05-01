@@ -1,5 +1,5 @@
 QTL.gCIMapping<-function(file=NULL,fileFormat="GCIM",fileICIMcov=NULL,Population=NULL,Model="Random",WalkSpeed=NULL,
-               CriLOD=NULL,Likelihood="REML",flagrqtl=FALSE,DrawPlot=TRUE,PlotFormat="jpeg",Resolution="Low",Trait=NULL,dir=NULL){
+               CriLOD=NULL,Likelihood="REML",SetSeed=11001,flagrqtl=FALSE,DrawPlot=TRUE,PlotFormat="jpeg",Resolution="Low",Trait=NULL,dir=NULL){
   
  
   WEN1re<-NULL; W1re<-NULL;readraw<-NULL;DoResult<-NULL;CLO<-NULL;
@@ -193,7 +193,7 @@ QTL.gCIMapping<-function(file=NULL,fileFormat="GCIM",fileICIMcov=NULL,Population
       for(NUM in Trait){
         rewen<-NULL;mxmp=NULL;galaxyy1<-NULL;res1a=NULL;res1d=NULL;chr_name=NULL 
         TRY1<-try({
-          outWEN<-WenS(flag,CriLOD,NUM,pheRaw,Likelihood,flagrqtl,WEN1re$yygg,WEN1re$mx,WEN1re$phe,WEN1re$chr_name,
+          outWEN<-WenS(flag,CriLOD,NUM,pheRaw,Likelihood,SetSeed,flagrqtl,WEN1re$yygg,WEN1re$mx,WEN1re$phe,WEN1re$chr_name,
                        WEN1re$v.map,WEN1re$gen.raw,WEN1re$a.gen.orig,WEN1re$d.gen.orig,WEN1re$n,WEN1re$names.insert2,WEN1re$X.ad.tran.data,WEN1re$X.ad.t4,dir)
           rewen<-outWEN$result
           mxmp<-outWEN$mxmp;galaxyy1<-outWEN$galaxyy1;res1a<-outWEN$res1a;res1d<-outWEN$res1d;chr_name<-outWEN$chr_name

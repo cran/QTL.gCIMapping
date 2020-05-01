@@ -27,15 +27,22 @@ Zhang Ya-Wen, Wen Yang-Jun, Wang Shi-Bo, and Zhang Yuan-Ming\cr
 Maintainer: Yuanming Zhang<soyzhang@mail.hzau.edu.cn>
 }
 \examples{
-D1=data(DHdata)
+\dontrun{
+data(DHdata)
+###
 readraw<-Readdata(file=DHdata,fileFormat="GCIM",fileICIMcov=NULL)
+###
 DoResult<-Dodata(fileFormat="GCIM",Population="DH",Model="Random",readraw)
-W1re<-WangF(DoResult$pheRaw,DoResult$genRaw,DoResult$mapRaw1,
-DoResult$yygg1,DoResult$flagRIL,DoResult$cov_en,Population="DH",
-WalkSpeed=1,CriLOD=2.5)
-WangS(DoResult$flag,CriLOD=2.5,NUM=1,DoResult$pheRaw,W1re$chrRaw_name,
-W1re$yygg,W1re$mx,W1re$phe,W1re$chr_name,W1re$gen,
-W1re$mapname,CLO=1)
+###
+W1re<-WangF(pheRaw=DoResult$pheRaw,genRaw=DoResult$genRaw,
+mapRaw1=DoResult$mapRaw1,yygg1=DoResult$yygg1,
+flagRIL=DoResult$flagRIL,cov_en=DoResult$cov_en,
+Population="DH",WalkSpeed=1,CriLOD=2.5)
+###
+ws<-WangS(flag=DoResult$flag,CriLOD=2.5,NUM=1,pheRaw=DoResult$pheRaw,
+chrRaw_name=W1re$chrRaw_name,yygg=W1re$yygg,mx=W1re$mx,phe=W1re$phe,
+chr_name=W1re$chr_name,gen=W1re$gen,mapname=W1re$mapname,CLO=1)
+}
 }
 
 

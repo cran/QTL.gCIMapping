@@ -9,8 +9,8 @@ Conduct multiple quantitative trait loci (QTL) mapping under the framework of ra
 \tabular{ll}{
 Package: \tab QTL.gCIMapping\cr
 Type: \tab Package\cr
-Version: \tab 3.2\cr
-Date: \tab 2019-11-8\cr
+Version: \tab 3.3\cr
+Date: \tab 2020-4-30\cr
 Depends: \tab MASS,dplyr,parcor,qtl\cr
 Imports: \tab methods,openxlsx,stringr,Rcpp\cr
 License: \tab GPL version 2 or newer\cr
@@ -19,7 +19,7 @@ LazyLoad: \tab yes\cr
 }
 \usage{
 QTL.gCIMapping(file,fileFormat,fileICIMcov,Population,Model,WalkSpeed,
-CriLOD,Likelihood,flagrqtl,DrawPlot,PlotFormat,Resolution,Trait,dir) 
+CriLOD,Likelihood,SetSeed,flagrqtl,DrawPlot,PlotFormat,Resolution,Trait,dir) 
  }
 \arguments{
 	\item{file}{File path and name in your computer.}
@@ -30,6 +30,7 @@ CriLOD,Likelihood,flagrqtl,DrawPlot,PlotFormat,Resolution,Trait,dir)
 	\item{WalkSpeed}{Walk speed for Genome-wide Scanning.(WalkSpeed=1)}
        \item{CriLOD}{Critical LOD scores for significant QTL (CriLOD=2.5).}
        \item{Likelihood}{This parameter is only for F2 population, including restricted maximum likelihood (REML) and maximum likelihood (ML).}
+       \item{SetSeed}{In which the cross validation experiment is needed. Generally speaking, the random seed in the cross-validation experiment was set as 11001. If some known genes are not identified by the seed, users may try to use some new random seeds. At this case, one better result may be obtained.}
        \item{flagrqtl}{This parameter is only for F2 population,   flagrqtl="FALSE" in the first running. If the other software detects only one QTL in a neighborhood but this software finds two linked QTLs (one with additive effect and another with dominant effect) in the region, let flagrqtl="TRUE"}
       \item{DrawPlot}{This parameter is for all the populations, including FALSE and TRUE, DrawPlot=FALSE indicates no figure output, DrawPlot=TRUE indicates the output of the figure against genome position.}
 	\item{PlotFormat}{This parameter is for all the figure files, including *.jpeg, *.png, *.tiff and *.pdf.}
@@ -46,7 +47,9 @@ Maintainer: Yuanming Zhang<soyzhang@mail.hzau.edu.cn>
 An efficient multi-locus mixed model framework for the detection of small and linked QTLs in F2.Wen Yang-Jun, Zhang Ya-Wen, Zhang Jin, Feng Jian-Ying, Jim M. Dunwell, Zhang Yuan-Ming*
 }
 \examples{
-G=data(F2data)
+\dontrun{
+data(F2data)
 QTL.gCIMapping(file=F2data,Population="F2",WalkSpeed=1,CriLOD=2.5,
 Trait=1,dir=tempdir()) 
+}
 }
