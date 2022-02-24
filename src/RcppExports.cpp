@@ -5,31 +5,36 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // markerinsert
-NumericMatrix markerinsert(NumericMatrix mp,NumericMatrix geno,NumericMatrix map,int cl,int gg1,int gg2,int gg0,int flagRIL);
+NumericMatrix markerinsert(NumericMatrix mp, NumericMatrix geno, NumericMatrix map, int cl, int gg1, int gg2, int gg0, int flagRIL);
 RcppExport SEXP _QTL_gCIMapping_markerinsert(SEXP mpSEXP, SEXP genoSEXP, SEXP mapSEXP, SEXP clSEXP, SEXP gg1SEXP, SEXP gg2SEXP, SEXP gg0SEXP, SEXP flagRILSEXP) {
-  BEGIN_RCPP
-  Rcpp::RObject rcpp_result_gen;
-  Rcpp::RNGScope rcpp_rngScope_gen;
-  Rcpp::traits::input_parameter< NumericMatrix >::type mp(mpSEXP);
-  Rcpp::traits::input_parameter< NumericMatrix >::type geno(genoSEXP);
-  Rcpp::traits::input_parameter< NumericMatrix >::type map(mapSEXP);
-  Rcpp::traits::input_parameter< int >::type cl(clSEXP);
-  Rcpp::traits::input_parameter< int >::type gg1(gg1SEXP);
-  Rcpp::traits::input_parameter< int >::type gg2(gg2SEXP);
-  Rcpp::traits::input_parameter< int >::type gg0(gg0SEXP);
-  Rcpp::traits::input_parameter< int >::type flagRIL(flagRILSEXP);
-  rcpp_result_gen = Rcpp::wrap(markerinsert(mp,geno,map,cl,gg1,gg2,gg0,flagRIL));
-  return rcpp_result_gen;
-  END_RCPP
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type mp(mpSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type geno(genoSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type map(mapSEXP);
+    Rcpp::traits::input_parameter< int >::type cl(clSEXP);
+    Rcpp::traits::input_parameter< int >::type gg1(gg1SEXP);
+    Rcpp::traits::input_parameter< int >::type gg2(gg2SEXP);
+    Rcpp::traits::input_parameter< int >::type gg0(gg0SEXP);
+    Rcpp::traits::input_parameter< int >::type flagRIL(flagRILSEXP);
+    rcpp_result_gen = Rcpp::wrap(markerinsert(mp, geno, map, cl, gg1, gg2, gg0, flagRIL));
+    return rcpp_result_gen;
+END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-  {"_QTL_gCIMapping_markerinsert", (DL_FUNC) &_QTL_gCIMapping_markerinsert, 8},
-  {NULL, NULL, 0}
+    {"_QTL_gCIMapping_markerinsert", (DL_FUNC) &_QTL_gCIMapping_markerinsert, 8},
+    {NULL, NULL, 0}
 };
 
 RcppExport void R_init_QTL_gCIMapping(DllInfo *dll) {
-  R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
-  R_useDynamicSymbols(dll, FALSE);
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }

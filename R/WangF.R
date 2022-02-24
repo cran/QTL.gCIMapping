@@ -1,29 +1,53 @@
-WangF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,flagRIL=NULL,
-                cov_en=NULL,Population=NULL,WalkSpeed=NULL,CriLOD=NULL){
-  
+#' To perform QTL mapping with wang method
+#'
+#' @param pheRaw phenotype matrix.
+#' @param genRaw genotype matrix.
+#' @param mapRaw1 linkage map matrix.
+#' @param yygg1 the transformed covariate matrix.
+#' @param flagRIL if RIL or not.
+#' @param cov_en raw covariate matrix.
+#' @param Population population flag.
+#' @param WalkSpeed Walk speed for Genome-wide Scanning.
+#' @param CriLOD Critical LOD scores for significant QTL.
+#'
+#' @return a list
+#' @export
+#'
+#' @examples
+#' data(DHdata)
+#' readraw<-Readdata(file=DHdata,fileFormat="GCIM",
+#' method="GCIM",filecov=NULL,MCIMmap=NULL,MultiEnv=FALSE)
+#' DoResult<-Dodata(fileFormat="GCIM",Population="DH",
+#' method="GCIM",Model="Random",readraw,MultiEnv=FALSE)
+#' ws<-WangF(pheRaw=DoResult$pheRaw,genRaw=DoResult$genRaw,
+#' mapRaw1=DoResult$mapRaw1,yygg1=DoResult$yygg1,
+#' flagRIL=DoResult$flagRIL,cov_en=DoResult$cov_en,
+#' Population="DH",WalkSpeed=1,CriLOD=2.5)
+WangF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,flagRIL=NULL,cov_en=NULL,Population=NULL,WalkSpeed=NULL,CriLOD=NULL){
+
   cl<-WalkSpeed;sLOD<-CriLOD;yygg<-NULL;chrRaw_name=NULL;
   mx=NULL;phe=NULL;chr_name=NULL;gen=NULL;mapname=NULL
-  
+
   if(is.null(genRaw)==TRUE){
     warning("Please input correct genotype dataset!")
-    
+
   }
   if(is.null(pheRaw)==TRUE){
     warning("Please input correct phenotype dataset!")
-    
+
   }
   if(is.null(mapRaw1)==TRUE){
     warning("Please input correct linkage map dataset!")
-    
+
   }
   if((is.null(genRaw)==FALSE)&&(is.null(pheRaw)==FALSE)&&(is.null(mapRaw1)==FALSE)&&(cl<0)){
     warning("Please input Walk Speed: >0!")
-    
+
   }
   if((is.null(genRaw)==FALSE)&&(is.null(pheRaw)==FALSE)&&(is.null(mapRaw1)==FALSE)&&(cl>0)&&(sLOD<0)){
     warning("Please input critical LOD score: >0!")
   }
-  
+
   if(is.null(yygg1)==FALSE){
     cov_en<-as.matrix(cov_en)
     yygg1<-as.matrix(yygg1)
@@ -50,7 +74,7 @@ WangF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,flagRIL=NULL,
     map_pos<-matrix(mapRaw10[,3],,1)
     mapRaw<-cbind(map_marker,map_chr,map_pos)
     nameMap<-matrix(mapRaw[,1],,1)
-    nameGenrow<-matrix(genRaw[1,],1,)#individual's name in genotype 
+    nameGenrow<-matrix(genRaw[1,],1,)#individual's name in genotype
     nameGencol<-matrix(genRaw[,1],,1)#marker's name in genotype
     namePhe<-as.matrix(pheRaw[,1],,1)
     nameCov<-matrix(yygg1[,1],,1)
@@ -123,7 +147,7 @@ WangF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,flagRIL=NULL,
     nameGenrow<-matrix(genRaw[1,],1,)
     nameGencol<-matrix(genRaw[,1],,1)
     namePhe<-as.matrix(pheRaw[,1],,1)
-    
+
     if(nameGenrow[2]=="1"){
       phee<-as.matrix(pheRaw[-1,-1])
       phe<-matrix(as.numeric(phee),nrow(phee),ncol(phee))
@@ -162,11 +186,11 @@ WangF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,flagRIL=NULL,
       mapname<-newMap
     }
   }
-  
+
   if(is.null(flagRIL)==TRUE){
     return(mapname)
   }else{
-    
+
     mapp1<-as.numeric(mapname[,2:3])
     mapp1<-matrix(mapp1,,2)
     chr<-length(unique(mapp1[,1]))
@@ -184,26 +208,26 @@ WangF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,flagRIL=NULL,
     }else{
       mx<-as.matrix(mx)
       mx<-apply(mx,2,as.numeric)
-      
+
       map<-mx[,1:2]
       geno<-t(mx[,3:(ncol(mx))])
       n_sam<-nrow(geno)
       gg1<-1;gg2<--1;gg0<-99
-      
-      
+
+
       mapinsert<-function(map,cl)
       {k<-0
       k1<-0
       mp<-numeric()
       for (ichr in 1:nrow(as.matrix(unique(map[,1]))))
-      { 
-        
+      {
+
         q1<-as.matrix(which(map[,1]==ichr))
         for (i in 2:(nrow(q1)))
         {rr<-map[q1[i],2]-map[q1[i-1],2]
         ll<-floor(rr/cl)
         q2<-rr-ll*cl
-        if (q2>0){ll<-ll+1} 
+        if (q2>0){ll<-ll+1}
         ss<-rr/ll
         k<-k+1
         for (j in 1:ll)
@@ -218,14 +242,14 @@ WangF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,flagRIL=NULL,
       }
       return(mp)
       }
-      
+
       mp<-mapinsert(map,cl)
       nq<-nrow(mp)
       mapp<-map
       mpp<-mp
       genoo<-geno
-      
-      
+
+
       markerall<-matrix(0,nrow(genoo),nrow(mpp))
       for (i in 1:nrow(as.matrix(unique(mapp[,1]))))
       {
@@ -258,15 +282,15 @@ WangF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,flagRIL=NULL,
           }
         }
       }
-      
+
       map<-mapp
       mp<-mpp
       geno<-genoo
-      
+
       hm0<-matrix(0,nrow(geno),ncol(geno))
       for (i in 1:nrow(as.matrix(unique(map[,1]))))
       {
-        
+
         hm<-as.matrix(which(map[,1]==i))
         for (j in 1:(nrow(hm)-1))
         {for (ii in 1:n_sam)
@@ -285,14 +309,14 @@ WangF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,flagRIL=NULL,
         {hm0[ii,hm[j]]<-2
         hm0[ii,hm[j+1]]<-2
         }
-        
+
         }
         }
       }
-      
+
       for (i in 1:n_sam)
       {
-        
+
         for (j in 1:nrow(as.matrix(unique(mapp[,1]))))
         {am<-as.matrix(which(mapp[,1]==j))
         pos0<-mapp[am,]
@@ -338,23 +362,55 @@ WangF<-function(pheRaw=NULL,genRaw=NULL,mapRaw1=NULL,yygg1=NULL,flagRIL=NULL,
       mp<-mpp
       geno<-genoo
       gen<-cbind(mpp[,2],mpp[,1],t(markerall))
-      
+
     }
-    
+
     output<-list(yygg=yygg,mx=mx,phe=phe,chrRaw_name=chrRaw_name,chr_name=chr_name,gen=gen,mapname=mapname)
     return(output)
-  }  
-  
-} 
+  }
 
+}
 #######################################################
+#' The second step of wang method
+#'
+#' @param flag fix or random model.
+#' @param CriLOD Critical LOD scores for significant QTL.
+#' @param NUM The number of trait.
+#' @param pheRaw Raw phenotype matrix.
+#' @param chrRaw_name raw chromosome name.
+#' @param yygg covariate matrix.
+#' @param mx raw genotype matrix.
+#' @param phe phenotype matrix.
+#' @param chr_name chromosome name.
+#' @param gen genotype matrix.
+#' @param mapname linkage map matrix.
+#' @param CLO Number of CPUs.
+#'
+#' @return a list
+#' @export
+#'
+#' @examples
+#' data(DHdata)
+#' readraw<-Readdata(file=DHdata,fileFormat="GCIM",
+#' method="GCIM",filecov=NULL,MCIMmap=NULL,MultiEnv=FALSE)
+#' DoResult<-Dodata(fileFormat="GCIM",Population="DH",
+#' method="GCIM",Model="Random",readraw,MultiEnv=FALSE)
+#' W1re<-WangF(pheRaw=DoResult$pheRaw,genRaw=DoResult$genRaw,
+#' mapRaw1=DoResult$mapRaw1,yygg1=DoResult$yygg1,
+#' flagRIL=DoResult$flagRIL,cov_en=DoResult$cov_en,
+#' Population="DH",WalkSpeed=1,CriLOD=2.5)
+#' ws<-WangS(flag=DoResult$flag,CriLOD=2.5,NUM=1,
+#' pheRaw=DoResult$pheRaw,chrRaw_name=W1re$chrRaw_name,
+#' yygg=W1re$yygg,mx=W1re$mx,phe=W1re$phe,
+#' chr_name=W1re$chr_name,gen=W1re$gen,
+#' mapname=W1re$mapname,CLO=1)
 WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
                 yygg=NULL,mx=NULL,phe=NULL,chr_name=NULL,gen=NULL,mapname=NULL,CLO=NULL){
-  
+
   sLOD<-CriLOD;result=NULL;mxmp=NULL;galaxyy1=NULL;res11=NULL;
-  
+
   fix<-function(x,gen,y,kk){
-    
+
     loglike<-function(theta){
       lambda<-exp(theta)
       logdt<-sum(log(lambda*delta+1))
@@ -374,7 +430,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
         loglike<- -0.5*logdt-0.5*(n-q)*log(yy-t(yx)%*%solve(xx)%*%yx)-0.5*log(det(xx))
       return(-loglike)
     }
-    
+
     fixed<-function(lambda){
       h<-1/(lambda*delta+1)
       yy<-sum(yu*h*yu)
@@ -410,7 +466,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
     n<-length(y)
     yu<-t(uu)%*%y
     tempx<-x
-    
+
     cl.cores <- detectCores()
     if(cl.cores<=2){
       cl.cores<-1
@@ -423,7 +479,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
     }
     cll <- makeCluster(cl.cores)
     registerDoParallel(cll)
-    
+
     i<-numeric()
     parmm<-foreach(i=1:nrow(gen),.combine=rbind)%dopar%{
       x<-tempx
@@ -458,12 +514,12 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
     stopCluster(cll)
     return(parmm)
   }
-  
-  
+
+
   random<-function(fx,gen,phe,kk,CLO)
   {
     mixed<-function(x,y,kk){
-      
+
       loglike<-function(theta){
         lambda<-exp(theta)
         logdt<-sum(log(lambda*delta+1))
@@ -480,7 +536,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
         loglike<- -0.5*logdt-0.5*(n-q)*log(yy-t(yx)%*%solve(xx)%*%yx)-0.5*log(det(xx))
         return(-loglike)
       }
-      
+
       fixed<-function(lambda){
         h<-1/(lambda*delta+1)
         yy<-sum(yu*h*yu)
@@ -499,7 +555,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
         stderr<-sqrt(var)
         return(c(beta,stderr,sigma2))
       }
-      
+
       qq<-eigen(kk)
       delta<-qq[[1]]
       uu<-qq[[2]]
@@ -527,8 +583,8 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
       par<-data.frame(lrt,beta,stderr,sigma2,lambda,sigma2g,lod,p_value)
       return(par)
     }
-    
-    
+
+
     loglike<-function(theta){
       xi<-exp(theta)
       tmp0<-zz*xi+1
@@ -540,7 +596,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
       loglike<- -0.5*logdt2-0.5*(n-s)*log(yHy-t(yHx)%*%solve(xHx)%*%yHx)-0.5*log(det(xHx))
       return(-loglike)
     }
-    
+
     fixed<-function(xi){
       tmp0<-zz*xi+diag(1)
       tmp<-xi*solve(tmp0)
@@ -565,7 +621,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
     n<-nrow(gen)
     m<-ncol(gen)
     x<-fx
-    
+
     s<-ncol(x)
     kk<-as.matrix(kk)
     qq<-eigen(kk)
@@ -588,7 +644,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
     for(i in 1:s){
       yx[i]<-sum(yu*h*xu[,i])
     }
-    
+
     if(is.null(CLO)==TRUE){
       cl.cores <- detectCores()
       if(cl.cores<=2){
@@ -602,7 +658,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
       }
       cll <- makeCluster(cl.cores)
       registerDoParallel(cll)
-      
+
       k<-numeric()
       parms<-foreach(k=1:m,.combine=rbind)%dopar%{
         z<-as.matrix(gen[,k])
@@ -635,7 +691,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
       }
       stopCluster(cll)
     }else{
-     
+
       qq<-numeric()
       for(k in 1:m){
         z<-as.matrix(gen[,k])
@@ -671,8 +727,8 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
    }
     return(parms)
   }
-  
-  
+
+
   multinormal<-function(y,mean,sigma)
   {
     pdf_value<-(1/sqrt(2*3.14159265358979323846*sigma))*exp(-(y-mean)*(y-mean)/(2*sigma));
@@ -699,7 +755,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
       bb<-solve(crossprod(ad,ad))%*%crossprod(ad,yn)
     vv1<-as.numeric(crossprod((yn-ad%*%bb),(yn-ad%*%bb))/ns);
     ll1<-sum(log(abs(multinormal(yn,ad%*%bb,vv1))))
-    
+
     sub<-1:ncol(ad);
     if(at1>0.5)
     {
@@ -719,7 +775,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
     }
     return (lod)
   }
-  
+
   #2010 EM_Bayes
   ebayes_EM<-function(x,z,y)
   {
@@ -801,18 +857,18 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
     }
     return (wang)
   }
-  
+
   phe<-as.matrix(phe[,NUM])
-  
+
   if((is.null(pheRaw)==TRUE)&(is.null(chrRaw_name)==TRUE)&(is.null(yygg)==TRUE)&
      (is.null(mx)==TRUE)&(is.null(chr_name)==TRUE)&(is.null(gen)==TRUE)&(is.null(mapname)==TRUE)){
-    return(phe)  
+    return(phe)
   }else{
-    
+
     deletRow<-which(is.na(phe)==TRUE)
     gentwo<-mx[,1:2]
     t_gen<-mx[,3:ncol(mx)]
-    
+
     if(length(deletRow)>0){
       phe<-as.matrix(phe[-deletRow,])
       t_gen1<-t_gen[,-deletRow]
@@ -830,26 +886,26 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
       }
       gen<-gen
     }
-    
+
     mx<-as.matrix(mx)
-    
+
     mxmp<-mx[,1:2]
     rownames(mxmp)<-NULL
     mxmp<-as.data.frame(mxmp,stringsAsFactors = F)
     mxmp[,1:2]<-sapply(mxmp[,1:2],as.numeric)
-    
-    
+
+
     map<-mx[,1:2]
     geno<-t(mx[,3:(ncol(mx))])
     n_sam<-nrow(geno)
-    
+
     if(is.null(yygg)==FALSE){
       fx<-cbind(matrix(1,n_sam,1),yygg)
     }
     if(is.null(yygg)==TRUE){
       fx<-matrix(1,n_sam,1)
     }
-    
+
     ori<-NULL
     for (j in 1:(nrow(map)))
     {
@@ -874,8 +930,8 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
     cc<-mean(diag(kk))
     kk<-kk/cc
     gen<-cbind(gen[,1:2],gen[,4:(ncol(gen))])
-    
-    
+
+
     if (flag==1)
     {code<-random(fx=fx,gen=gen,phe=phe,kk=kk,CLO)
     tempcode<-code
@@ -886,17 +942,17 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
     tempcode[,2:3] <- gen[,1:2]
     }
     res1<-tempcode
-    
+
     res11<-res1[,c(2,3,10)]
     colnames(res11)<-NULL
-    
+
     x0<-t(gen[,3:ncol(gen)])
     y<-phe
     bb<-code
     bb<-as.matrix(bb)
     aa<-numeric()
     for (i in 1:nrow(as.matrix(unique(gen[,1])))){
-      
+
       mc<-which(gen[,1]==i)
       mc<-as.matrix(mc)
       for (j in 1:(nrow(mc)-2))
@@ -905,11 +961,11 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
       if (bb[mc[1],10]<bb[mc[2],10]){aa<-rbind(aa,mc[1])}
       if (bb[mc[nrow(mc)],10]<bb[mc[nrow(mc)-1],10]){aa<-rbind(aa,mc[nrow(mc)])}
     }
-    
+
     xx<-x0[,aa]
     par<-ebayes_EM(fx,xx,y)
     selectpos<-which(par[,1]<=0.01)
-    
+
     if(length(selectpos)==0){
       warning("No QTL are detected!")
     }else{
@@ -919,11 +975,11 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
       y<-as.matrix(y)
       lod<-likelihood(fx,xxx,y)
       dd<-as.matrix(which(lod[,1]>=sLOD))
-      
+
       if(length(dd)==0){
         warning("No QTL are detected!")
       }else{
-        
+
         if(length(dd)==1){
           na<-matrix(name[dd],1,)
           xxxm<-matrix(xxx[,dd],,1)
@@ -959,20 +1015,20 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
         bbbb<-solve(t(wow)%*%wow)%*%t(wow)%*%y
         ef<-as.matrix(bbbb[(ncol(fx)+1):nrow(bbbb),1])
         y<-y-x1%*%ef
-        
+
         if (flag==1)
         {code<-random(fx=fx,gen=gen,phe=y,kk=kk,CLO)
         }
         if (flag==0)
         {code<-fix(x=fx,gen=gen,y=y,kk=kk)
         }
-        
+
         x0<-t(gen[,3:(ncol(gen))])
         bb<-code
         bb<-as.matrix(bb)
         aa<-numeric()
         for (i in 1:nrow(as.matrix(unique(gen[,1])))){
-          
+
           mc<-which(gen[,1]==i)
           mc<-as.matrix(mc)
           for (j in 1:(nrow(mc)-2))
@@ -981,7 +1037,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
           if (bb[mc[1],10]<bb[mc[2],10]){aa<-rbind(aa,mc[1])}
           if (bb[mc[nrow(mc)],10]<bb[mc[nrow(mc)-1],10]){aa<-rbind(aa,mc[nrow(mc)])}
         }
-        
+
         mi<-code[aa,2:3]
         style<-numeric()
         for (i in 1:nrow(mi))
@@ -997,7 +1053,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
         par<-ebayes_EM(fx,xx,y)
         cc<-as.matrix(which(par[,1]<=0.01))
         selectpos1<-which(par[,1]<=0.01)
-        
+
         if (nrow(cc)>0)
         {
           name<-as.matrix(aa[cc,1])
@@ -1028,14 +1084,14 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
         ve<-(1/(n_sam-1))*t(pp-woww%*%bbbb)%*%(pp-woww%*%bbbb)
         vp<-(1/(n_sam-1))*t(pp-mean(pp))%*%(pp-mean(pp))
         vy<-(sum(va)+ve)
-        
+
         if (vy>=vp){
           heredity<-va/as.vector(vy)
           pv<-vy}
         if (vy<vp){
           heredity<-va/as.vector(vp)
           pv<-vp}
-        
+
         va<-matrix(va,,1)
         va<-round(va,4)
         heredity<-100*heredity
@@ -1043,7 +1099,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
         heredity<-round(heredity,4)
         galaxyy[which(abs(galaxyy)>1e-4)]<-round(galaxyy[which(abs(galaxyy)>1e-4)],4)
         galaxyy[which(abs(galaxyy)<1e-4)]<-as.numeric(sprintf("%.4e",galaxyy[which(abs(galaxyy)<1e-4)]))
-        
+
         if(is.null(mapname)==FALSE){
           map<-as.numeric(mapname[,2:3])
           map<-matrix(map,nrow(mapname),2)
@@ -1051,10 +1107,10 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
           galaxytwo<-matrix(galaxyy[,1:2],,2)
           left_marker<-numeric()
           right_marker<-numeric()
-          
-          
+
+
           for( i in 1:nrow(galaxyy)){
-            
+
             allchr<-as.vector(map[which(map[,1]==galaxytwo[i,1]),2])
             chr_loc<-which(map[,1]==galaxytwo[i,1])
             ###
@@ -1063,34 +1119,34 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
             max_left<-max(allchr[chose_left[]==TRUE])
             chr_loclen<-length(chr_loc)
             if(max_left==-Inf){
-              
+
               leftmarker<-matrix(mapname[chr_loc[1],1],,1)
             }else{
               leftloc<-which(allchr[]==max_left)
-              
+
               leftmarker<-matrix(allmarker[leftloc],,1)
             }
-            
+
             chose_right<-(map[which(map[,1]==galaxytwo[i,1]),2]>=galaxytwo[i,2])
             min_right<-min(allchr[chose_right[]==TRUE])
             if(min_right==Inf){
               rightmarker<-matrix(mapname[chr_loc[chr_loclen],1],,1)
             }else{
               rightloc<-which(allchr[]==min_right)
-              
+
               rightmarker<-matrix(allmarker[rightloc],,1)
             }
-            
-            
+
+
             left_marker<-rbind(left_marker,leftmarker)
             right_marker<-rbind(right_marker,rightmarker)
           }
-          
+
         }else{
           left_marker<-matrix("------",nrow(galaxyy),1)
-          right_marker<-matrix("------",nrow(galaxyy),1) 
+          right_marker<-matrix("------",nrow(galaxyy),1)
         }
-        
+
         if((is.null(chrRaw_name)==FALSE)&&(is.null(chr_name)==FALSE)){
           chr_name<-chr_name
           chrRaw_name<-chrRaw_name
@@ -1102,12 +1158,12 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
             chrName0<-matrix(chrRaw_name[chrLoc],,1)
             chrName<-rbind(chrName,chrName0)
           }
-          
+
           galaxyy_A<-cbind(chrName,galaxyylast)
         }else{
           galaxyy_A<-galaxyy
         }
-        
+
         galaxyy_A<-as.matrix(galaxyy_A)
         vee<-matrix("",nrow(galaxyy_A),1)
         vee[1,1]<-round(ve,4)
@@ -1117,7 +1173,7 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
         vpp<-matrix(vpp,,1)
         traitid<-matrix(pheRaw[1,NUM+1],nrow(galaxyy_A),1)
         galaxyy<-galaxyy
-        
+
         if(is.null(galaxyy)==FALSE){
           if(nrow(galaxyy)>1){
             galaxyy1<-galaxyy[,c(1,2,4)]
@@ -1125,13 +1181,13 @@ WangS<-function(flag=NULL,CriLOD=NULL,NUM=NULL,pheRaw=NULL,chrRaw_name=NULL,
             galaxyy1<-t(as.matrix(galaxyy[,c(1,2,4)]))
           }
         }
-        
+
         result<-cbind(traitid,galaxyy_A,left_marker,right_marker,va,heredity,vee,vpp)
         colnames(result)<-c("Trait","Chr","Position (cM)","Additive Effect","LOD","Left_Marker","Right_Marker","Var_Genet_(i)","r2 (%)","Var_Error",
                             "Var_Phen (total)")
-        
+
       }
-    } 
+    }
     output<-list(result=result,mxmp=mxmp,galaxyy1=galaxyy1,res11=res11,chr_name=chr_name)
     return(output)
   }
